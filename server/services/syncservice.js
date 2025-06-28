@@ -1,0 +1,55 @@
+const { fetchAPIData } = require('./cmc');
+const { SaveToDB, DeleteAllfromDB, GetAllFromDB } = require('./dbservices');
+
+const FetchAndSavetoDB = async () => {
+  // 1. Fetch external API data  
+  const response = await fetchAPIData();
+
+  if (response.success) { // 2. if api fetch response is successful...
+    console.log(response.msg);
+
+    dbsave = await SaveToDB(response.data);  //.....attempt to save to DB and save the result to dbsave
+    console.log(dbsave);
+    if (!dbsave.success) { // if saving to db is unsuccessful, return the db save error message
+      return dbsave
+      
+    }
+  }
+ 
+
+  return response; // Return the fetched data or an error object
+
+};
+
+// const FetchAndSavetoDB = async () => {
+//   // 1. Fetch external API data  
+//   const response = await fetchAPIData();
+
+//   if (response.success) { // 2. if api fetch response is successful...
+//     console.log(response.msg);
+
+//     dbsave = await SaveToDB(response.data);  //.....attempt to save to DB and save the result to dbsave
+//     console.log(dbsave.msg);
+//     if (!dbsave.success) { // if saving to db is unsuccessful, return the db save error message
+//       return dbsave
+//     }
+//   }
+
+//   return response; // Return the fetched data or an error object
+
+// };
+
+const DeleteAllRecords = async () => {
+  const response = await DeleteAllfromDB();
+  return response; // Return the response from the database deletion operation
+
+};
+
+const GetAllRecords = async () => {
+
+  const response = await GetAllFromDB();    
+  return response
+
+};
+
+module.exports = { FetchAndSavetoDB, DeleteAllRecords, GetAllRecords };

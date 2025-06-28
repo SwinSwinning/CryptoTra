@@ -1,0 +1,17 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model Candle {
+  id    Int    @id @default(autoincrement())
+  UCID Int 
+  symbol String
+  name String  
+  price Float
+  percent_change_24h Float
+}
