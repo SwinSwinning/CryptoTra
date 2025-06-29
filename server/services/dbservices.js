@@ -6,11 +6,13 @@ const SaveToDB = async (data) => {
   try {
     const tosave = []
     const records = data.data
+    const timestamp = data.status.timestamp; // Get the timestamp from the data
     // console.log(records)
     Object.values(records).forEach(item => {
       // console.log(item.id, item.name, item.symbol, item.quote["825"].price, item.quote["825"].percent_change_24h);
       tosave.push({
         UCID: item.id,
+        timestamp : timestamp,
         name: item.name,
         symbol: item.symbol,
         price: item.quote["825"].price,
@@ -56,6 +58,21 @@ const GetAllFromDB = async () => {
 
 };
 
+const GetFiltered = async (UCID) => { 
+  try {
+      filteredcandles = await prisma.candle.findMany({
+  where: {
+    UCID: parseInt(UCID),
+  },
+})
+return {success: true, msg:"Record(s) found and returned", data: filteredcandles} ; // Return the retrieved data
+  } catch (error) {
+    console.error('REcord not found:', error);
+    return {success: false, msg:"record not found"} ; // Return an error object
+    
+  }
+
+};
 module.exports = {
-  SaveToDB,  DeleteAllfromDB, GetAllFromDB
+  SaveToDB,  DeleteAllfromDB, GetAllFromDB, GetFiltered
 };

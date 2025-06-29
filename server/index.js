@@ -1,5 +1,5 @@
 require('dotenv').config()
-const { FetchAndSavetoDB, DeleteAllRecords, GetAllRecords } = require('../server/services/syncservice');
+const { FetchAndSavetoDB, DeleteAllRecords, GetRecords, GetFilteredRecords } = require('../server/services/syncservice');
 
 
 const express = require('express');
@@ -45,13 +45,13 @@ app.get('/ret', async (req, res) => {
       return res.status(500).json(fetchSaveRes);
     }
 
-    const records = await GetAllRecords();
+    const records = await GetRecords();
     if (!records.success) {
       console.log("records success is false")
       console.log(records)
       return res.status(500).json(records);
     }
-
+    console.log(res)
     res.json({ success: true, records })
   } catch (error) {
     res.status(500).json({ success: false, msg: 'Rrrroute Errorrrrrrr ' + error.message });
@@ -62,12 +62,24 @@ app.get('/ret', async (req, res) => {
 
 
 app.get('/getrecords', async (req, res) => {
+  const ucid = req.query.UCID; // Get UCID from the query parameter 
+
+  // console.log("index ->   get records:" + ucid);
   try {
-    const data = await GetAllRecords();
-    res.json({success:true, data})
+    
+    if (ucid) {
+      const data = await GetFilteredRecords(ucid);
+      res.json({ success: true, data })
+    } else {
+      const data = await GetRecords();
+      res.json({ success: true, data })
+    }
+
+
+
 
   } catch (error) {
-    console.log('Error in /getrecords route:');
+    console.log('Error in /getrecords route:' + error.message);
     return res.status(500).json({ success: false, msg: error.message });
 
   }
