@@ -51,7 +51,7 @@ app.get('/ret', async (req, res) => {
       console.log(records)
       return res.status(500).json(records);
     }
-    console.log(res)
+   
     res.json({ success: true, records })
   } catch (error) {
     res.status(500).json({ success: false, msg: 'Rrrroute Errorrrrrrr ' + error.message });
@@ -63,7 +63,7 @@ app.get('/ret', async (req, res) => {
 
 app.get('/getrecords', async (req, res) => {
   const ucid = req.query.UCID; // Get UCID from the query parameter 
-
+  const pagenumber = req.query.page
   // console.log("index ->   get records:" + ucid);
   try {
     
@@ -72,7 +72,9 @@ app.get('/getrecords', async (req, res) => {
       res.json({ success: true, data })
     } else {
       const data = await GetRecords();
+    
       res.json({ success: true, data })
+      console.log(data.count)
     }
 
 

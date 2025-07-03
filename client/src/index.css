@@ -38,16 +38,31 @@ h1 {
 }
 
 button {
-  border-radius: 8px;
+  /* border-radius: 8px;
   border: 1px solid black;
-  transition: border-color 0.25s;
+  transition: border-color 0.25s; */
+  @apply inline-block rounded-sm border border-indigo-600 bg-indigo-600 px-12 py-3 text-sm font-medium text-white hover:bg-transparent hover:text-indigo-600 focus:ring-3 focus:outline-hidden
 }
+
+
 button:hover {
   border-color: #646cff;
 }
 button:focus,
 button:focus-visible {
   /* outline: 4px auto -webkit-focus-ring-color; */
+}
+
+.table-cell {
+  @apply px-4 py-1 text-left truncate;
+}
+
+.table-header {
+  @apply bg-gray-200 font-semibold;
+}
+
+.table-row {
+  @apply border-t;
 }
 
 @media (prefers-color-scheme: light) {

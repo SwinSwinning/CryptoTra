@@ -5,12 +5,12 @@ const FetchAndSavetoDB = async () => {
   // 1. Fetch external API data  
   const response = await fetchAPIData();
   // console.log(response.data.status.timestamp);
-
+  console.log(response.msg)
   if (response.success) { // 2. if api fetch response is successful...
     
 
     dbsave = await SaveToDB(response.data);  //.....attempt to save to DB and save the result to dbsave
-    console.log(dbsave);
+    console.log(dbsave.msg);
     if (!dbsave.success) { // if saving to db is unsuccessful, return the db save error message
       return dbsave
       
@@ -46,10 +46,9 @@ const DeleteAllRecords = async () => {
 
 };
 
-const GetRecords = async () => {
+const GetRecords = async (page=1,limit=32 ) => {
 
-
-  const response = await GetAllFromDB();    
+  const response = await GetAllFromDB(page, limit);    
   return response
 
 };

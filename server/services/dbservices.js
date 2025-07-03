@@ -45,11 +45,17 @@ const DeleteAllfromDB = async () => {
 
 };
 
-const GetAllFromDB = async () => {
+const GetAllFromDB = async (pagenumber, maxrecords) => {
+
 
   try {
-    candles = await prisma.candle.findMany()
-    return {success: true, msg:"All records from DB retrieved", data: candles} ; // Return the retrieved data
+    const total_records = await prisma.candle.count(); // Get the total number of records
+    candles = await prisma.candle.findMany({
+      // skip: (pagenumber - 1) * maxrecords,
+      // take: maxrecords,
+    })
+    
+    return {success: true, msg:"All records from DB retrieved", data: candles,  count: total_records} ; // Return the retrieved data 
 
   } catch (error) {
     console.error('Error retrieving from database:', error);
