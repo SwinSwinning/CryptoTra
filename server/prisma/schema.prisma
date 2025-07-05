@@ -9,10 +9,10 @@ datasource db {
 
 model Candle {
   id    Int    @id @default(autoincrement())
-  timestamp String
-  UCID Int 
-  symbol String
+  timestamp Int
+  ticker String 
   name String  
   price Float
-  percent_change_24h Float
+  volume Float
+
 }

@@ -224,7 +224,7 @@ function App() {
         </ul>
       </nav> */}
       </div>
-      <div className='footer'>
+      <div className='footer'> Placeholder for footer
       </div>
     </div>
   )
