@@ -13,9 +13,6 @@ function App() {
 
   const [totalRecordCount, setTotalRecordCount] = useState(0);
 
-  // const [recordsPerPage, setRecordsPerPage] = useState(10); // Number of records to display per page
-  // const [totalPages, setTotalPages] = useState(1); // Total number of pages
-
   useEffect(() => {
     async function fetchData() {
       try {
@@ -31,13 +28,16 @@ function App() {
 
 
   const fetchRecords = async () => {
-    const res = await fetch("http://localhost:8080/ret"); // retrieve new records from the server 
+    console.log(records.length > 0 ? "Fetching new records" : "Fetching records for the first time"); // add ticker condition also
+    const last20 = records.length == 0; // add ticker condition also
+
+    const res = await fetch(`http://localhost:8080/ret?history=${last20}`); // retrieve new records from the server 
     const data = await res.json();
 
     if (data.success) {
       const rawRecords = Object.values(data.records.data)
       setRecords(rawRecords);    // Set the records state
-      setUniqueNames([...new Set(rawRecords.map((r) => r.UCID))]);       // use refreshui here??!?!?!
+      setUniqueNames([...new Set(rawRecords.map((r) => r.ticker))]);       // use refreshui here??!?!?!
       toast.success("Records retrieved successfully");
     }
     else {
@@ -71,7 +71,10 @@ function App() {
 
   };
 
+  const ShowRecords = () => {
+    console.log(records);
 
+  };
 
 
 
@@ -80,11 +83,12 @@ function App() {
     setShowDropdown((prev) => !prev);
   };
 
-  const handleSelect = async (ucid) => {
+  const handleSelect = async (ticker) => {
     setShowDropdown(false);
     try {
-      const res = await fetch(`http://localhost:8080/getrecords?UCID=${encodeURIComponent(ucid)}`);
+      const res = await fetch(`http://localhost:8080/getrecords?ticker=${encodeURIComponent(ticker)}`); //Can I use the records state here to not have to fetch again?
       const data = await res.json();
+      console.log("data", data)
       const rawRecords = Object.values(data.data.data)
 
       setRecords(rawRecords);
@@ -104,22 +108,16 @@ function App() {
     }
   };
 
-  // const NextPaginate = async () => {
-  //   const rawCurrentPage = currentPage;
-  //   setCurrentPage(rawCurrentPage + 1);
-  //   RefreshUI(rawCurrentPage + 1);
-
-  // };
 
   const RefreshUI = async () => {
-    // console.log("pagenumber is ", pagenumber)
     const res = await fetch(`http://localhost:8080/getrecords`);
     const data = await res.json();
 
     const rawRecords = Object.values(data.data.data)
+    // console.log("rawRecords", rawRecords)
     setRecords(rawRecords);
     setTotalRecordCount(rawRecords.length); // Set the total record count
-    setUniqueNames([...new Set(rawRecords.map((r) => r.UCID))]);
+    setUniqueNames([...new Set(rawRecords.map((r) => r.ticker))]);
   }
 
 
@@ -129,7 +127,9 @@ function App() {
       <header className="text-center bg-gray-100 p-3">
         <h1 className="text-indigo-600 mb-5">Crypto Tracker</h1>
         <div className="flex gap-4">
-          <button onClick={fetchRecords} className='flex-1'>Retrieve</button><button onClick={deleteRecords} className='flex-1'>Delete</button>
+          <button onClick={() => fetchRecords()} className='flex-1'>Retrieve Records</button>
+          
+          <button onClick={deleteRecords} className='flex-1'>Delete</button>
         </div>
 
       </header>
@@ -140,41 +140,47 @@ function App() {
 
         />
 
-      {/* {error && <p className="text-red-600">{error}</p>} */}
+
 
 
       <div className="w-full">
         <table className="w-full divide-y-2 divide-gray-200 table-fixed">
           <thead className="table-header">
-            <tr className='space-between'>
-              <th className="table-cell w-2/12">ID</th>
-              <th className="table-cell w-3/12">Timestamp</th>
-              <th className="px-4 py-1 text-left relative cursor-pointer w-2/12"><div onClick={toggleDropdown}>UCID▼</div>
+            <tr className='space-between'>              
+              <th className="table-cell w-2/16">Timestamp</th>
+              <th className="px-4 py-1 text-left relative cursor-pointer w-2/16"><div onClick={toggleDropdown}>Ticker▼</div>
                         {showDropdown && (
             <ul className="absolute left-0 top-full border mt-1 w-48 bg-white shadow-md z-10">
               <li className='p-2 hover:bg-gray-100' onClick={() => ClearFilter()} >Clear Filter</li>
-              {uniqueNames.map((UCID) => (
-                <li key={UCID}
-                  onClick={() => handleSelect(UCID)}
+              {uniqueNames.map((ticker) => (
+                <li key={ticker}
+                  onClick={() => handleSelect(ticker)}
                   className="p-2 hover:bg-gray-100">
-                  {UCID}
+                  {ticker}
                 </li>
               ))}
             </ul>
           )}</th>
-              <th className="table-cell w-2/12">Name</th>
-              <th className="table-cell w-3/12">Price</th>
+              <th className="table-cell w-2/16">Name</th>
+              <th className="table-cell w-2/16">Price</th>
+              <th className="table-cell w-2/16">% change (1)</th>
+              <th className="table-cell w-2/16">% change (77)</th>
+              <th className="table-cell w-2/16">% change (144)</th>
+              <th className="table-cell w-2/16">% change (288)</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
             {records.length > 0 ? (
               records.map((record) => (
-                <tr key={record.id} className="table-row">
-                  <td className="table-cell">{record.id}</td>
+                <tr key={record.id} className="table-row">                  
                   <td className="table-cell">{record.timestamp}</td>
-                  <td className="table-cell">{record.UCID}</td>
+                  <td className="table-cell">{record.ticker}</td>
                   <td className="table-cell">{record.name}</td>
                   <td className="table-cell">{record.price}</td>
+                  <td className="table-cell">{record.last1change}</td>
+                  <td className="table-cell">{record.last77change}</td>
+                  <td className="table-cell">{record.last144change}</td>
+                  <td className="table-cell">{record.last288change}</td>
                 </tr>
               ))) : (
               <tr>
@@ -225,6 +231,9 @@ function App() {
       </nav> */}
       </div>
       <div className='footer'> Placeholder for footer
+        <div className="flex gap-4">
+          <button onClick={ShowRecords} className='flex-1'>Show FE records</button>
+        </div>
       </div>
     </div>
   )

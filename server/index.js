@@ -1,7 +1,7 @@
 require('dotenv').config()
-const { FetchAndSavetoDB, HandleRet, DeleteAllRecords, GetRecords, GetFilteredRecords } = require('../server/services/syncservice');
-
-
+const {  RunTest, HandleRet, DeleteAllRecords, GetRecords, GetFilteredRecords } = require('../server/services/syncservice');
+const { CheckTrigger } = require('../server/services/signalservices');
+const { SaveToDB, DeleteAllfromDB, GetAllFromDB } = require('../server/services/dbservices'); // for testing / remove after
 
 
 const express = require('express');
@@ -13,6 +13,7 @@ const port = process.env.PORT || 8080;
 const cron = require('node-cron');
 
 const { PrismaClient } = require('@prisma/client');
+
 const prisma = new PrismaClient();
 
 
@@ -22,7 +23,7 @@ app.use(cors());
 
 // cron.schedule('*/10 * * * *', async () => {
 // try {
-//   const records = await HandleRet();
+//   const records = await HandleRet(fullhistory=false);
 //   console.log('Cron job success:');
 // } catch (err) {
 //   console.error('Cron job failed:', err.message);
@@ -49,57 +50,56 @@ app.get('/del', async (req, res) => {
 
 
 app.get('/test', async (req, res) => {
-  const result = await FetchAndSavetoDB();
-  res.json({ success: true, msg: 'Test route is working', data: result });
-
+ 
+  const candle = {
+  ticker: 'XBTUSDT',
+  data: [
+    {
+      timestamp: 1753917600,
+      low: '117517.1',
+      close: '117517.1',
+      volume: '0.00078214',
+      last1change: 0,
+      last77change: 0,
+      last144change: 0,
+      last288change: 0,
+      conditions: null
+    }
+  ]
+}
+  const result = await SaveToDB([candle]);
+  if (!result.success) {
+    return res.status(500).json({ success: false, msg: result.msg });
+  } 
+  console.log("Saved to DB successfully -- end");
+  return res.json({ success: result.success, msg: result.msg, data: result });
 });
 
-app.get('/ret', async (req, res) => {
-  try {
-    const result = await HandleRet();
-        if (!result.success) {         
-   
-      return res.status(500).json(result);
 
+app.get('/ret', async (req, res) => {
+  const history = req.query.history === 'true'; // Convert query parameter to boolean
+  try {
+    const result = await HandleRet(history);
+        if (!result.success) {       
+      return res.status(500).json(result);
     }
 
-    res.json({ success: true, records: result });
+    return res.json({ success: true, records: result });
   } catch (error) {
     return res.status(500).json(result);    
   }
-
-  // try {
-  //   const fetchSaveRes = await FetchAndSavetoDB();
-  //   if (!fetchSaveRes.success) {
-  //     console.log("fetchSaveRes success is false")
-  //     console.log(fetchSaveRes)
-  //     return res.status(500).json(fetchSaveRes);
-  //   }
-
-  //   const records = await GetRecords();
-  //   if (!records.success) {
-  //     console.log("records success is false")
-  //     console.log(records)
-  //     return res.status(500).json(records);
-  //   }
-
-  //  console.log(records)
-  //   res.json({ success: true, records })
-  // } catch (error) {
-  //   res.status(500).json({ success: false, msg: 'Rrrroute Errorrrrrrr ' + error.message });
-  // }
 });
 
 
 
 app.get('/getrecords', async (req, res) => {
-  const ucid = req.query.UCID; // Get UCID from the query parameter 
-  const pagenumber = req.query.page
-  // console.log("index ->   get records:" + ucid);
+  const ticker = req.query.ticker; // Get ticker from the query parameter 
+
+
   try {
     
-    if (ucid) {
-      const data = await GetFilteredRecords(ucid);
+    if (ticker) {
+      const data = await GetFilteredRecords(ticker);
       res.json({ success: true, data })
     } else {
       const data = await GetRecords();

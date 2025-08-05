@@ -14,5 +14,15 @@ model Candle {
   name String  
   price Float
   volume Float
+  ema21 Float
+  ema50 Float
+  ema200 Float
+  rsi14 Float
+  last1change Float
+  last77change Float
+  last144change Float
+  last288change Float
+
+  @@unique([timestamp, ticker])
 
 }

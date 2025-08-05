@@ -1,73 +1,102 @@
-function ema(data, period) {
-  const k = 2 / (period + 1);
-  let emaArr = [];
-  let emaPrev = data.slice(0, period).reduce((a, b) => a + b, 0) / period;
+const { emaLast, rsiLast } = require('./tahelpers'); // move to sync
 
-  for (let i = 0; i < data.length; i++) {
-    if (i < period - 1) {
-      emaArr.push(null);
-    } else if (i === period - 1) {
-      emaArr.push(emaPrev);
-    } else {
-      emaPrev = data[i] * k + emaPrev * (1 - k);
-      emaArr.push(emaPrev);
+function CalculateIndicators_old(data, indicators) {
+  const closes = data.map(d => Number(d.close));
+  // const lows = data.map(d =>  Number(d.low));
+  // const volumes = data.map(d =>  Number(d.volume));
+  const indicatorFuncs = {
+ 
+    ema: (period) => emaLast(closes, period),
+    rsi: (period) => rsiLast(closes, period)
+    // ✅ easily add more: macd, sma, etc.
+  };
+
+  const indicatorCalcResults = {};
+  for (const name of indicators) {
+    const match = name.match(/^([a-zA-Z]+)(\d+)$/);
+    if (!match) continue; // skip invalid format
+
+    const type = match[1].toLowerCase();
+    const period = Number(match[2]);
+
+    if (indicatorFuncs[type]) {
+      indicatorCalcResults[name] = indicatorFuncs[type](period);
     }
   }
-  return emaArr;
+  return indicatorCalcResults
 }
 
-function rsi(data, period) {
-  let gains = [], losses = [], rsis = [];
+function createCalculateIndicators(indicators) {    // Start here <------------------------------------
+  const indicatorFuncs = {};
 
-  for (let i = 1; i < data.length; i++) {
-    const delta = data[i] - data[i - 1];
-    gains.push(delta > 0 ? delta : 0);
-    losses.push(delta < 0 ? -delta : 0);
+  for (const name of indicators) {
+    const match = name.match(/^([a-zA-Z]+)(\d+)$/);
+    if (!match) continue;
+
+    const type = match[1].toLowerCase();
+    const period = Number(match[2]);
+
+    if (type === "ema") indicatorFuncs[name] = createEmaCalculator(period);
+    if (type === "rsi") indicatorFuncs[name] = createRsiCalculator(period);
   }
 
-  let avgGain = gains.slice(0, period).reduce((a, b) => a + b) / period;
-  let avgLoss = losses.slice(0, period).reduce((a, b) => a + b) / period;
-  rsis.push(null, ...Array(period - 1).fill(null));
+  return function calculateForCandle(candle) {
+    const close = Number(candle.close);
+    const results = {};
 
-  for (let i = period; i < gains.length; i++) {
-    avgGain = (avgGain * (period - 1) + gains[i]) / period;
-    avgLoss = (avgLoss * (period - 1) + losses[i]) / period;
-    const rs = avgGain / (avgLoss || 1e-10);
-    rsis.push(100 - 100 / (1 + rs));
-  }
-
-  return rsis;
+    for (const name in indicatorFuncs) {
+      results[name] = indicatorFuncs[name](close);
+    }
+    return results;
+  };
 }
 
-function checkTrigger(data) {
-  const closes = data.map(d => d.close);
-  const lows = data.map(d => d.low);
-  const volumes = data.map(d => d.volume);
 
-  const ema21 = ema(closes, 21);
-  const ema50 = ema(closes, 50);
-  const ema200 = ema(closes, 200);
-  const rsi14 = rsi(closes, 14);
 
-  const avgVol20 = volumes.map((_, i) =>
-    i < 19 ? null : volumes.slice(i - 19, i + 1).reduce((a, b) => a + b, 0) / 20
+function CheckTrigger(data) {   // Array of at least 200 candles, ordered from oldest to newest
+
+  // const closes = data.map(d => Number(d.close));
+  // const lows = data.map(d =>  Number(d.low));
+  // const volumes = data.map(d =>  Number(d.volume));
+
+  // const ema21 = ema(closes, 21);
+  // const ema50 = ema(closes, 50);
+  // const ema200 = ema(closes, 200);
+  // const rsi14 = rsi(closes, 14);
+
+  const avgVol100 = volumes.map((_, i) =>
+    i < 99 ? null : volumes.slice(i - 99, i + 1).reduce((a, b) => a + b, 0) / 100
   );
+
+  // const current = data[0];
+  // console.log(`${current.timestamp} - Volume ${volumes[current]}`)
 
   const i = data.length - 1;
   const last = data[i];
-  const prev = data[i - 1];
+  const prev = data[i + 1];
 
-  const cond1 = closes[i] > ema200[i];
-  const cond2 = ema50[i] > ema200[i];
-  const cond3 = lows[i] <= ema21[i] && closes[i] > ema21[i];
-  const cond4 = rsi14[i] >= 55 && rsi14[i] <= 70 && rsi14[i] > rsi14[i - 1];
-  const cond5 = volumes[i] > avgVol20[i];
+  //console.log(`${last.timestamp} - Volume ${volumes[i]} Avg Volume ${avgVol100[i]}`)
+  const AbvAvgVolume = volumes[i] > avgVol100[i]; // Current volume above 100-period average volume  - checked
 
-  const trigger = cond1 && cond2 && cond3 && cond4 && cond5;
 
-  return { trigger, cond1 } //,cond2, cond3, cond4, cond5 };
+  const Aema200 = closes[i] > ema200[i]; // Current close above EMA200
+  // console.log(`${last.timestamp} - close ${closes[i]} ema 200 ${ema200[i]} - trigger ${Aema200}`) - checked
+
+  const EMA50A200 = ema50[i] > ema200[i]; // EMA50 above EMA200
+  console.log(data.length)
+
+  console.log(`${last.timestamp} - ema50 ${ema50[i]} ema200 ${ema200[i]} - trigger ${EMA50A200}`)
+
+  const rsiB5570 = rsi14[i] >= 55 && rsi14[i] <= 70 && rsi14[i] > rsi14[i - 1];   // RSI between 55 and 70 and increasing
+
+
+  const ema21bounce = lows[i] <= ema21[i] && closes[i] > ema21[i]; // Current low below EMA21 and close above EMA21
+
+  //const trigger = cond1 && cond2 && cond3 && cond4 //&& cond5;
+
+  return { Aema200, EMA50A200, rsiB5570, AbvAvgVolume, ema21bounce };
 }
 
 module.exports = {
-  checkTrigger
+  CheckTrigger, CalculateIndicators
 };

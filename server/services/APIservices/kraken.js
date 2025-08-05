@@ -13,10 +13,9 @@ const fetchAPIData = async (pair) => {
             params: parameters
         });
 
-        return { success: true, msg: "Successfully fetched from API", data: response.data }; // Return the fetched data  
-    } catch (error) {
-        console.error('Error fetching data from API:', error);
-        return { success: false, msg: "Failed to fetch data from API" }; // Return an error object   
+        return { success: true, msg: `Successfully fetched ${pair} data from API:`, data: response.data }; // Return the fetched data  
+    } catch (error) {     
+        return { success: false, msg: `Error fetching ${pair} data from API:`, data: error}; // Return an error object   
     }
 }
 
