@@ -1,6 +1,6 @@
 const { fetchAPIData } = require('./APIservices/kraken');
 const { SaveToDB, DeleteAllfromDB, GetAllFromDB, GetFiltered } = require('./dbservices');
-const { createCalculateIndicators } = require('./signalservices')
+const { createCalculateIndicators, CheckTrigger, updateAvgVolume } = require('./signalservices')
 // const { ema, rsi } = require('./tahelpers')
 
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
@@ -31,19 +31,29 @@ const HandleRet_old = async () => {
 
 const HandleRet = async () => {
   // 1. Fetching and Preprocessing for storage into db
-  const tradingpairs = ['XBTUSDT', 'ETHUSDT'];
+  const tradingpairs = ['XBTUSDT'] //, 'ETHUSDT'];
   const response = await Fetch(tradingpairs);
   if (!response.success) {
     return response
   }
 
-  // 2. Preprocess the response  
-  const preprocessed = []
-  for (const res of response.data) {
 
-    preprocessed.push(PreprocessPairResponseData(res)); // prepare the data from the response for storing in the DB   
-    console.log(`Data for ${res.ticker} Preprocessed successfully`)
+  const preprocessed = []
+  for (const pair of response.data) {
+    // 2. Preprocess the response  
+    preprocessed.push(PreprocessPairResponseData(pair)); // prepare the data from the response for storing in the DB   
+    console.log(`Data for ${pair.ticker} Preprocessed successfully`)
+
+    // 3 Check triggers for latest candle of each pair
+    const trigger = CheckTrigger(preprocessed[0]);
+    if (trigger) {
+      console.log("Hi")
+    }
   }
+
+
+
+
 
   // 3. Storing into database
   console.log("Storing into Database")
@@ -180,14 +190,20 @@ const PreprocessPairResponseData = (response) => {
     const calcIndicators = createCalculateIndicators(indicators);
     for (const candle of candleArray) {
       const result = calcIndicators(candle);
+      //Averages
+      
+      // console.log(`Volume: ${candle.volume}, Avg Volume: ${last100volavg}`); // Log the volume and average volume
+      result.last100volavg = updateAvgVolume(candle.volume);; // Add the average volume to the result
       candleTa.push(result);
 
     }
 
+
+
     const enrichedArray = []
     for (let i = 0; i < 20; i++) { // enrich and add to database only the last 20 candles
       const enrichedCandle = { ...EnrichCurrentCandle(candleArray.slice(0, candleArray.length - i)), ...candleTa[candleTa.length - 1 - i] };
-      enrichedArray.push(enrichedCandle) // slice the array from the beginning to the end -i
+      enrichedArray.push(enrichedCandle) 
 
     }
 
