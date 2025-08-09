@@ -1,14 +1,14 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
-const SaveToDB = async (candles) => {
+const SaveToDB = async (parsedCandleData) => {
   // console.log("Saving to DB", candles[0])
 
   try {
     const tosave = []
-    for (const candle of candles) {
-      const ticker = candle.ticker
-      Object.values(candle.data).forEach(item => {      
+    for (const pairdata of parsedCandleData) {
+      const ticker = pairdata.ticker
+      Object.values(pairdata.data).forEach(item => {      
         tosave.push({
           ticker: ticker,
           timestamp: item.timestamp,

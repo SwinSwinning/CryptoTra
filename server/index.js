@@ -77,9 +77,9 @@ app.get('/test', async (req, res) => {
 
 
 app.get('/ret', async (req, res) => {
-  const history = req.query.history === 'true'; // Convert query parameter to boolean
+  // const history = req.query.history === 'true'; // Convert query parameter to boolean
   try {
-    const result = await HandleRet(history);
+    const result = await HandleRet();
         if (!result.success) {       
       return res.status(500).json(result);
     }

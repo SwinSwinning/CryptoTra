@@ -1,30 +1,6 @@
-const { emaLast, rsiLast } = require('./tahelpers'); // move to sync
+const { createRsiCalculator, createEmaCalculator } = require('./tahelpers'); // move to sync
 
-function CalculateIndicators_old(data, indicators) {
-  const closes = data.map(d => Number(d.close));
-  // const lows = data.map(d =>  Number(d.low));
-  // const volumes = data.map(d =>  Number(d.volume));
-  const indicatorFuncs = {
- 
-    ema: (period) => emaLast(closes, period),
-    rsi: (period) => rsiLast(closes, period)
-    // ✅ easily add more: macd, sma, etc.
-  };
 
-  const indicatorCalcResults = {};
-  for (const name of indicators) {
-    const match = name.match(/^([a-zA-Z]+)(\d+)$/);
-    if (!match) continue; // skip invalid format
-
-    const type = match[1].toLowerCase();
-    const period = Number(match[2]);
-
-    if (indicatorFuncs[type]) {
-      indicatorCalcResults[name] = indicatorFuncs[type](period);
-    }
-  }
-  return indicatorCalcResults
-}
 
 function createCalculateIndicators(indicators) {    // Start here <------------------------------------
   const indicatorFuncs = {};
@@ -98,5 +74,5 @@ function CheckTrigger(data) {   // Array of at least 200 candles, ordered from o
 }
 
 module.exports = {
-  CheckTrigger, CalculateIndicators
+  CheckTrigger, createCalculateIndicators
 };

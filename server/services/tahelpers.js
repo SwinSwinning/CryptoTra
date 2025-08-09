@@ -1,61 +1,77 @@
-  // --- EMA helper (last value only) ---
-  function emaLast_old(values, length) {
-    const k = 2 / (length + 1);
-    let emaPrev = values.slice(0, length).reduce((a, b) => a + b) / length;
-    for (let i = length; i < values.length; i++) {
-      emaPrev = values[i] * k + emaPrev * (1 - k);
-    }
-    return emaPrev;
-      }
-
-
-function emaLast(length) {
+// Create stateful calculators ONCE outside the loop
+function createEmaCalculator(length) {
   const k = 2 / (length + 1);
   let emaPrev = null;
-  let buffer = [];
+  let count = 0;
+  let sum = 0;
 
   return function update(close) {
-    buffer.push(close);
+    count++;
 
-    // Seed with SMA when enough candles collected
-    if (emaPrev === null && buffer.length === length) {
-      emaPrev = buffer.reduce((a, b) => a + b, 0) / length;
-    } else if (emaPrev !== null) {
-      emaPrev = (close - emaPrev) * k + emaPrev;
+    if (emaPrev === null) {
+      sum += close;
+      if (count === length) {
+        emaPrev = sum / length; // seed SMA
+        return emaPrev;
+      }
+      return 0; // warm-up
     }
 
-    return emaPrev; // null until enough candles for seed
+    emaPrev = (close - emaPrev) * k + emaPrev;
+    return emaPrev;
   };
 }
-  // --- RSI helper (last value only) ---
-  function rsiLast(values, length) {
-    let gains = 0, losses = 0;
 
-    // seed averages
-    for (let i = 1; i <= length; i++) {
-      const diff = values[i] - values[i - 1];
-      if (diff >= 0) gains += diff;
-      else losses -= diff;
+
+function createRsiCalculator(length) {
+  let avgGain = null;
+  let avgLoss = null;
+  let prevClose = null;
+  let count = 0;
+
+  return function update(close) {
+    if (prevClose === null) {
+      prevClose = close;
+      return 0; // not enough data yet
     }
-    gains /= length;
-    losses /= length;
 
-    // update to last
-    for (let i = length + 1; i < values.length; i++) {
-      const diff = values[i] - values[i - 1];
-      if (diff >= 0) {
-        gains = (gains * (length - 1) + diff) / length;
-        losses = (losses * (length - 1)) / length;
-      } else {
-        gains = (gains * (length - 1)) / length;
-        losses = (losses * (length - 1) - diff) / length;
+    const change = close - prevClose;
+    const gain = change > 0 ? change : 0;
+    const loss = change < 0 ? -change : 0;
+
+    count++;
+
+    if (avgGain === null) {
+      // Warm-up period: use SMA for first `length` candles
+      if (count <= length) {
+        avgGain = (avgGain ?? 0) + gain;
+        avgLoss = (avgLoss ?? 0) + loss;
+
+        if (count === length) {
+          avgGain /= length;
+          avgLoss /= length;
+          const rs = avgLoss === 0 ? 100 : avgGain / avgLoss;
+          prevClose = close;
+          return 100 - 100 / (1 + rs);
+        }
+        prevClose = close;
+        return 0; // still warming up
       }
+    } else {
+      // Wilder’s smoothing
+      avgGain = (avgGain * (length - 1) + gain) / length;
+      avgLoss = (avgLoss * (length - 1) + loss) / length;
     }
 
-    const rs = gains / (losses || 1); // avoid div by zero
+    prevClose = close;
+    const rs = avgLoss === 0 ? 100 : avgGain / avgLoss;
     return 100 - 100 / (1 + rs);
-  }
+  };
+}
+
+
+
 
 module.exports = {
-  emaLast, rsiLast
+  createEmaCalculator, createRsiCalculator
 };
