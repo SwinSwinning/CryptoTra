@@ -31,7 +31,7 @@ const HandleRet_old = async () => {
 
 const HandleRet = async () => {
   // 1. Fetching and Preprocessing for storage into db
-  const tradingpairs = ['XBTUSDT'] //, 'ETHUSDT'];
+  const tradingpairs = ['ETHUSDT']//'XBTUSDT'];
   const response = await Fetch(tradingpairs);
   if (!response.success) {
     return response
@@ -43,12 +43,10 @@ const HandleRet = async () => {
     // 2. Preprocess the response  
     preprocessed.push(PreprocessPairResponseData(pair)); // prepare the data from the response for storing in the DB   
     console.log(`Data for ${pair.ticker} Preprocessed successfully`)
+    // console.log(preprocessed[0])
 
-    // 3 Check triggers for latest candle of each pair
-    const trigger = CheckTrigger(preprocessed[0]);
-    if (trigger) {
-      console.log("Hi")
-    }
+
+
   }
 
 
@@ -175,7 +173,7 @@ const PreprocessPairResponseData = (response) => {
     const ohlcvdata = response.data.data.result[response.ticker];
     // console.log(ohlcvdata.slice(ohlcvdata.length-5,ohlcvdata.length)) // Log the last 5 elements of the ohlcvdata array
 
-    const numCandlesForCalc = 289 // Need at least 289 candles to calculate all the indicators
+    const numCandlesForCalc = 700 // Need at least 289 candles to calculate all the indicators
     const arrtoassign = ohlcvdata.slice(ohlcvdata.length - numCandlesForCalc, ohlcvdata.length); // need at least 289 for all the indicators to be calculated
 
     // assign close, low, volume and timestamp
@@ -186,23 +184,44 @@ const PreprocessPairResponseData = (response) => {
 
     const candleTa = []
     // Calculate ta's for most recent 289 candles
+    let prevcandle = null;
     const indicators = ["ema21", "ema50", "ema200", "rsi14"];
     const calcIndicators = createCalculateIndicators(indicators);
+    console.log(response.ticker)
     for (const candle of candleArray) {
-      const result = calcIndicators(candle);
+      
+      const result = {...candle, ...calcIndicators(candle)};
       //Averages
       
       // console.log(`Volume: ${candle.volume}, Avg Volume: ${last100volavg}`); // Log the volume and average volume
-      result.last100volavg = updateAvgVolume(candle.volume);; // Add the average volume to the result
-      candleTa.push(result);
+      result.last100volavg = updateAvgVolume(result.volume);; // Add the average volume to the result
+      
 
+          // 3 Check triggers for latest candle of each pair
+    const trigger = CheckTrigger(result, prevcandle);
+    result.trigger = trigger.triggered; // Add the trigger to the result
+   
+    candleTa.push(result);
+
+
+    prevcandle = result; // Update prevcandle for the next iteration
     }
 
 
 
     const enrichedArray = []
     for (let i = 0; i < 20; i++) { // enrich and add to database only the last 20 candles
-      const enrichedCandle = { ...EnrichCurrentCandle(candleArray.slice(0, candleArray.length - i)), ...candleTa[candleTa.length - 1 - i] };
+
+       const enrichedCandle = EnrichCurrentCandle(candleTa.slice(0, candleTa.length - i)) ;
+       const prevcandle = candleTa[candleTa.length - 2 - i];
+     
+        //  console.log(`Trigger for candle at ${enrichedCandle.timestamp}: ---------------------------- >>>`, enrichedCandle.trigger);
+        // console.log("avg volume ", enrichedCandle.last100volavg, " this volume ", enrichedCandle.volume)
+        //  console.log("close ", enrichedCandle.close, " ema200 ", enrichedCandle.ema200)
+        //  console.log("ema50 ", enrichedCandle.ema50, " > ema200 ", enrichedCandle.ema200)
+        //  console.log("rsi14 ", enrichedCandle.rsi14, "  prev rsi ", prevcandle.timestamp, prevcandle.rsi14)
+     
+
       enrichedArray.push(enrichedCandle) 
 
     }

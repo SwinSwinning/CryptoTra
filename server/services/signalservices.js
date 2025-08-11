@@ -53,47 +53,31 @@ function createCalculateIndicators(indicators) {    // Start here <-------------
 
 
 
-function CheckTrigger(cdata) {   
-  const data = cdata.data.slice(0,2)
-  console.log(data)
-  // const closes = data.map(d => Number(d.close));
-  // const lows = data.map(d =>  Number(d.low));
-  // const volumes = data.map(d =>  Number(d.volume));
+function CheckTrigger(candle,  prevcandle ) {
+     
+  if (!prevcandle) {
+    //console.log("No previous candle found, cannot check trigger");
+    return { triggered: false, conds: {} };
+  }
 
-  // // const ema21 = ema(closes, 21);
-  // // const ema50 = ema(closes, 50);
-  // // const ema200 = ema(closes, 200);
-  // // const rsi14 = rsi(closes, 14);
+  const AbvAvgVolume = candle.volume > candle.last100volavg;
 
+  // Current close above EMA200
+   const Aema200 = candle.close > candle.ema200;
+  
+  // EMA50 above EMA200
+const EMA50A200 = candle.ema50 > candle.ema200;
 
+  // RSI between 55 and 70 and increasing
+const rsiB5070 = candle.rsi14 >= 50 && candle.rsi14 <= 70 //&& candle.rsi14 > prevcandle.rsi14;
 
-  // const current = data[0];
-  // console.log(`${current.timestamp} - Volume ${volumes[current]}`)
+ 
+  // Current low below EMA21 and close above EMA21
+  const ema21bounce = candle.low <= candle.ema21 && candle.close > candle.ema21;
 
-  // const i = data.length - 1;
-  // const last = data[i];
-  // const prev = data[i + 1];
-
-  //console.log(`${last.timestamp} - Volume ${volumes[i]} Avg Volume ${avgVol100[i]}`)
-  // const AbvAvgVolume = volumes[i] > avgVol100[i]; // Current volume above 100-period average volume  - checked
-
-
-  // const Aema200 = closes[i] > ema200[i]; // Current close above EMA200
-  // // console.log(`${last.timestamp} - close ${closes[i]} ema 200 ${ema200[i]} - trigger ${Aema200}`) - checked
-
-  // const EMA50A200 = ema50[i] > ema200[i]; // EMA50 above EMA200
-  // // console.log(data.length)
-
-  // // console.log(`${last.timestamp} - ema50 ${ema50[i]} ema200 ${ema200[i]} - trigger ${EMA50A200}`)
-
-  // const rsiB5570 = rsi14[i] >= 55 && rsi14[i] <= 70 && rsi14[i] > rsi14[i - 1];   // RSI between 55 and 70 and increasing
-
-
-  // const ema21bounce = lows[i] <= ema21[i] && closes[i] > ema21[i]; // Current low below EMA21 and close above EMA21
-
-  // //const trigger = cond1 && cond2 && cond3 && cond4 //&& cond5;
-
-  //return { Aema200, EMA50A200, rsiB5570, AbvAvgVolume, ema21bounce };
+  const trigger =  Aema200 && EMA50A200 && rsiB5070 && AbvAvgVolume// && ema21bounce;
+  return {"triggered": trigger, "conds" : {"Aema200": Aema200, 
+    "EMA50A200": EMA50A200, "rsiB5570" : rsiB5070, "AbvAvgVolume": AbvAvgVolume, "ema21bounce": ema21bounce }};
 }
 
 module.exports = {

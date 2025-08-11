@@ -2,22 +2,13 @@
 function createEmaCalculator(length) {
   const k = 2 / (length + 1);
   let emaPrev = null;
-  let count = 0;
-  let sum = 0;
 
   return function update(close) {
-    count++;
-
     if (emaPrev === null) {
-      sum += close;
-      if (count === length) {
-        emaPrev = sum / length; // seed SMA
-        return emaPrev;
-      }
-      return 0; // warm-up
+      emaPrev = close; // seed from first candle
+    } else {
+      emaPrev = (close - emaPrev) * k + emaPrev;
     }
-
-    emaPrev = (close - emaPrev) * k + emaPrev;
     return emaPrev;
   };
 }

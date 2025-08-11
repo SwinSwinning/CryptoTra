@@ -23,6 +23,7 @@ const SaveToDB = async (parsedCandleData) => {
           last77change: parseFloat(item.last77change),
           last144change: parseFloat(item.last144change),
           last288change: parseFloat(item.last288change),
+          trigger: item.trigger,
         })
       })
     };
@@ -42,13 +43,14 @@ const valuesSQL = tosave
     ${c.last1change},
     ${c.last77change},
     ${c.last144change},
-    ${c.last288change}
+    ${c.last288change},
+    ${c.trigger}
   )`).join(",");
 
   // Execute raw SQL to insert data because sqlite does not support ON CONFLICT DO NOTHING
   await prisma.$executeRawUnsafe(`
   INSERT OR IGNORE INTO Candle
-    (ticker, timestamp, name, price, volume, ema21, ema50, ema200, rsi14, last1change, last77change, last144change, last288change)
+    (ticker, timestamp, name, price, volume, ema21, ema50, ema200, rsi14, last1change, last77change, last144change, last288change, trigger)
   VALUES ${valuesSQL}
 `);
     // await prisma.candle.createMany({
