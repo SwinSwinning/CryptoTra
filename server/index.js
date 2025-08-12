@@ -1,7 +1,6 @@
 require('dotenv').config()
 const {  RunTest, HandleRet, DeleteAllRecords, GetRecords, GetFilteredRecords } = require('../server/services/syncservice');
-const { CheckTrigger } = require('../server/services/signalservices');
-const { SaveToDB, DeleteAllfromDB, GetAllFromDB } = require('../server/services/dbservices'); // for testing / remove after
+// const { SaveToDB, DeleteAllfromDB, GetAllFromDB } = require('../server/services/dbservices'); // for testing / remove after
 
 
 const express = require('express');
@@ -49,31 +48,31 @@ app.get('/del', async (req, res) => {
 });
 
 
-app.get('/test', async (req, res) => {
+// app.get('/test', async (req, res) => {
  
-  const candle = {
-  ticker: 'XBTUSDT',
-  data: [
-    {
-      timestamp: 1753917600,
-      low: '117517.1',
-      close: '117517.1',
-      volume: '0.00078214',
-      last1change: 0,
-      last77change: 0,
-      last144change: 0,
-      last288change: 0,
-      conditions: null
-    }
-  ]
-}
-  const result = await SaveToDB([candle]);
-  if (!result.success) {
-    return res.status(500).json({ success: false, msg: result.msg });
-  } 
-  console.log("Saved to DB successfully -- end");
-  return res.json({ success: result.success, msg: result.msg, data: result });
-});
+//   const candle = {
+//   ticker: 'XBTUSDT',
+//   data: [
+//     {
+//       timestamp: 1753917600,
+//       low: '117517.1',
+//       close: '117517.1',
+//       volume: '0.00078214',
+//       last1change: 0,
+//       last77change: 0,
+//       last144change: 0,
+//       last288change: 0,
+//       conditions: null
+//     }
+//   ]
+// }
+//   const result = await SaveToDB([candle]);
+//   if (!result.success) {
+//     return res.status(500).json({ success: false, msg: result.msg });
+//   } 
+//   console.log("Saved to DB successfully -- end");
+//   return res.json({ success: result.success, msg: result.msg, data: result });
+// });
 
 
 app.get('/ret', async (req, res) => {
