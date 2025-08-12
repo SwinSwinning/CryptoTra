@@ -1,14 +1,15 @@
 const { fetchAPIData } = require('./APIservices/kraken');
 const { SaveToDB, DeleteAllfromDB, GetAllFromDB, GetFiltered } = require('./dbservices');
-const {PreprocessPairResponseData } = require('./synchelpers')
+const {PreprocessPairResponseData, sendNotification } = require('./synchelpers')
 
 
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 
 const HandleRet = async () => {
+     
   // 1. Fetching and Preprocessing for storage into db
-  const tradingpairs = ['ETHUSDT']//'XBTUSDT'];
+  const tradingpairs = ['ETHUSDT','XBTUSDT'];
   const response = await Fetch(tradingpairs);
   if (!response.success) {
     return response
@@ -17,16 +18,26 @@ const HandleRet = async () => {
   const preprocessed = []
   for (const pair of response.data) {
     // 2. Preprocess the response  
-    preprocessed.push(PreprocessPairResponseData(pair)); // prepare the data from the response for storing in the DB   
-    const latestCandle = preprocessed[0].data[0]
-    const prevCandle = preprocessed[0].data[1]
+
+   // Get the latest candle from the preprocessed data
+    preprocessed.push(PreprocessPairResponseData(pair)); // prepare the data from the response for storing in the DB 
+  const latestCandle = preprocessed[preprocessed.length-1].data[0];
     console.log(`Data for ${pair.ticker} Preprocessed successfully`)
   
+try {
+      // 4. Sending notifications for triggers
+    
+    console.log("Sending notifications for triggers")
+    if (!latestCandle.trigger) {
+
+      console.log("Trigger detected for", pair.ticker, "at", latestCandle.timestamp);
+      sendNotification(latestCandle, pair.ticker);
+    }
+} catch (error) {
+  console.log(error);
+}
  
   }
-
- 
-
   // 3. Storing into database
   console.log("Storing into Database")
   const savedtodb = await SyncSave(preprocessed)
@@ -35,6 +46,8 @@ const HandleRet = async () => {
   }
   console.log("Successfully saved to Database")
 
+
+
   // 4. Returning all records from Database
   const records = await GetRecords();
   if (!records.success) {
@@ -42,6 +55,8 @@ const HandleRet = async () => {
   }
   console.log("Successfully retrieved records from Database")
   return records
+    
+
 };
 
 const Fetch = async (tradingpairsArr) => {
@@ -59,7 +74,6 @@ const Fetch = async (tradingpairsArr) => {
         }
       };
       parsed.push({ ticker: pair, data: response });
-
       await sleep(800); // Sleep to avoid hitting the API rate limit
     }
     return {

@@ -79,13 +79,15 @@ app.get('/ret', async (req, res) => {
   // const history = req.query.history === 'true'; // Convert query parameter to boolean
   try {
     const result = await HandleRet();
+    console.log("HandleRet completed");
         if (!result.success) {       
       return res.status(500).json(result);
     }
 
     return res.json({ success: true, records: result });
   } catch (error) {
-    return res.status(500).json(result);    
+    console.log('Error in /ret route:' + error.message);
+    return res.status(500).json({ success: false, msg: error.message });
   }
 });
 

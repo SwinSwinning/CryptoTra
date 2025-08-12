@@ -1,22 +1,6 @@
 const { createRsiCalculator, createEmaCalculator } = require('./tahelpers'); // move to sync
+const { sendTelegramMessage } = require('./telegram');
 
-let volumeSum = 0;
-let volumeQueue = []; // stores last 100 volumes
-
-function updateAvgVolume(newVolume) {
-  newVolume = Number(newVolume);
-  if (isNaN(newVolume)) return 0;
-
-  volumeQueue.push(newVolume); // now a number
-  volumeSum += newVolume;
-
-  if (volumeQueue.length > 100) {
-    const removed = volumeQueue.shift();
-    volumeSum -= removed;
-  }
-
-  return volumeSum / volumeQueue.length;
-}
 
 
 const PreprocessPairResponseData = (response) => {
@@ -43,12 +27,12 @@ const PreprocessPairResponseData = (response) => {
     const calcIndicators = createCalculateIndicators(indicators);
     const avgVol = createAvgVolumeCalculator(100);
     console.log(response.ticker)
-    for (const candle of candleArray) {      
-      const result = {...candle, ...calcIndicators(candle)};    
+    for (const candle of candleArray) {
+      const result = { ...candle, ...calcIndicators(candle) };
       result.last100volavg = avgVol(result.volume);
       //console.log(`${candle.timestamp} Volume: ${candle.volume}, Avg Volume: ${result.last100volavg}`); // Log the volume and average volume 
-    candleTa.push(result);
-    prevcandle = result; // Update prevcandle for the next iteration
+      candleTa.push(result);
+      prevcandle = result; // Update prevcandle for the next iteration
     }
 
 
@@ -56,21 +40,24 @@ const PreprocessPairResponseData = (response) => {
     const enrichedArray = []
     for (let i = 0; i < 20; i++) { // enrich and add to database only the last 20 candles
 
-       const latestCandle = EnrichCurrentCandle(candleTa.slice(0, candleTa.length - i)) ;
-       const prevCandle = candleTa[candleTa.length - 2 - i];
-     
-        //  console.log(`Trigger for candle at ${enrichedCandle.timestamp}: ---------------------------- >>>`, enrichedCandle.trigger);
-        // console.log("avg volume ", enrichedCandle.last100volavg, " this volume ", enrichedCandle.volume)
-        //  console.log("close ", enrichedCandle.close, " ema200 ", enrichedCandle.ema200)
-        //  console.log("ema50 ", enrichedCandle.ema50, " > ema200 ", enrichedCandle.ema200)
-        //  console.log("rsi14 ", enrichedCandle.rsi14, "  prev rsi ", prevcandle.timestamp, prevcandle.rsi14)
-     
-    // 3 Check triggers for latest candle of each pair
+      const latestCandle = EnrichCurrentCandle(candleTa.slice(0, candleTa.length - i));
+      const prevCandle = candleTa[candleTa.length - 2 - i];
+
+      //  console.log(`Trigger for candle at ${enrichedCandle.timestamp}: ---------------------------- >>>`, enrichedCandle.trigger);
+      // console.log("avg volume ", enrichedCandle.last100volavg, " this volume ", enrichedCandle.volume)
+      //  console.log("close ", enrichedCandle.close, " ema200 ", enrichedCandle.ema200)
+      //  console.log("ema50 ", enrichedCandle.ema50, " > ema200 ", enrichedCandle.ema200)
+      //  console.log("rsi14 ", enrichedCandle.rsi14, "  prev rsi ", prevcandle.timestamp, prevcandle.rsi14)
+
+      // 3 Check triggers for latest candle of each pair
       const trigger = CheckTrigger(latestCandle, prevCandle);
-      console.log(trigger) 
+      // console.log(trigger)
       // Add the trigger to the result  
       latestCandle.trigger = trigger.triggered;
-      enrichedArray.push(latestCandle) 
+      enrichedArray.push(latestCandle)
+      // if (trigger.triggered) {
+      //   sendNotification(latestCandle, response.ticker);
+      // }
 
     }
 
@@ -83,41 +70,41 @@ const PreprocessPairResponseData = (response) => {
   }
 }
 
-  function Assign(candle) {
-    const [timestamp, , , low, close, , volume] = candle; // assign the candle data to the variables timestamp, low, close, and volume 
-    const result = {
-      timestamp,
-      low,
-      close,
-      volume
-    }
-
-    return result
+function Assign(candle) {
+  const [timestamp, , , low, close, , volume] = candle; // assign the candle data to the variables timestamp, low, close, and volume 
+  const result = {
+    timestamp,
+    low,
+    close,
+    volume
   }
 
-    function EnrichCurrentCandle(arr) { // sliced array from oldest to newest 20 candles
-    const currentCandle = arr[arr.length - 1];
-    //console.log("Enriching current candle", currentCandle.timestamp)
+  return result
+}
 
-    const periods = [1, 77, 144, 288];
+function EnrichCurrentCandle(arr) { // sliced array from oldest to newest 20 candles
+  const currentCandle = arr[arr.length - 1];
+  //console.log("Enriching current candle", currentCandle.timestamp)
 
-    periods.forEach((p) => {
+  const periods = [1, 77, 144, 288];
 
-      if (arr.length > p) { // 4 loops
-        const prev = arr[arr.length - 1 - p];
-        //console.log(`${p}----- Comparing ${currentCandle.timestamp} and ${prev.timestamp}`)
-        //console.log(`${p}----- Comparing ${currentCandle.close} and ${prev.close}`)
+  periods.forEach((p) => {
 
-        currentCandle[`last${p}change`] = ((currentCandle.close - prev.close) / prev.close) * 100;
-        //console.log(`last ${p} change: ${currentCandle[`last${p}change`]}`);
-      } else {
-        currentCandle[`last${p}change`] = 0;
-      }
-    });
-    return currentCandle;
-  };
+    if (arr.length > p) { // 4 loops
+      const prev = arr[arr.length - 1 - p];
+      //console.log(`${p}----- Comparing ${currentCandle.timestamp} and ${prev.timestamp}`)
+      //console.log(`${p}----- Comparing ${currentCandle.close} and ${prev.close}`)
 
-function createCalculateIndicators(indicators) {    // Start here <------------------------------------
+      currentCandle[`last${p}change`] = ((currentCandle.close - prev.close) / prev.close) * 100;
+      //console.log(`last ${p} change: ${currentCandle[`last${p}change`]}`);
+    } else {
+      currentCandle[`last${p}change`] = 0;
+    }
+  });
+  return currentCandle;
+};
+
+function createCalculateIndicators(indicators) {    
   const indicatorFuncs = {};
 
   for (const name of indicators) {
@@ -194,6 +181,34 @@ function CheckTrigger(candle, prevcandle) {
   };
 }
 
+function sendNotification(candle, ticker) {
+
+const pctEmoji = (v) => {
+  const num = Number(v);
+  return num >= 0
+    ? `📈 ${num.toFixed(2)}%`
+    : `📉 ${num.toFixed(2)}%`;
+};
+
+    const message = `Coin: ${ticker}\n` +
+`Current Price: ${Number(candle.close).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}\n` +    
+  `Last Change --------: ${pctEmoji(candle.last1change)}\n` +
+  `6h Change ----------: ${pctEmoji(candle.last77change)}\n` +
+  `12h Change ---------: ${pctEmoji(candle.last144change)}\n` +
+  `24h Change----------: ${pctEmoji(candle.last288change)}\n` +
+`RSI-----------------------: ${candle.rsi14.toFixed(2)}\n` +
+`EMA21----------------: ${Number(candle.ema21).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}\n` +
+`EMA50----------------: ${Number(candle.ema50).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}\n` +
+`EMA200---------------: ${Number(candle.ema200).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}\n`
+
+
+    // console.log(message)
+
+    sendTelegramMessage(message);
+}
+
+
+
 module.exports = {
-  PreprocessPairResponseData, CheckTrigger
+  PreprocessPairResponseData, CheckTrigger, sendNotification
 };
