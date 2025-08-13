@@ -38,7 +38,9 @@ const PreprocessPairResponseData = (response) => {
 
 
     const enrichedArray = []
-    for (let i = 0; i < 20; i++) { // enrich and add to database only the last 20 candles
+    let latestTriggerResult = {} 
+    const numOfCandles = 20
+    for (let i = 0; i < numOfCandles; i++) { // enrich and add to database only the last 20 candles
 
       const latestCandle = EnrichCurrentCandle(candleTa.slice(0, candleTa.length - i));
       const prevCandle = candleTa[candleTa.length - 2 - i];
@@ -50,19 +52,24 @@ const PreprocessPairResponseData = (response) => {
       //  console.log("rsi14 ", enrichedCandle.rsi14, "  prev rsi ", prevcandle.timestamp, prevcandle.rsi14)
 
       // 3 Check triggers for latest candle of each pair
-      const trigger = CheckTrigger(latestCandle, prevCandle);
+      //const trigger = CheckTrigger(latestCandle, prevCandle);
       // console.log(trigger)
       // Add the trigger to the result  
-      latestCandle.trigger = trigger.triggered;
+      //latestCandle.trigger = trigger;
+      const triggerResult = CheckTrigger(latestCandle, prevCandle);
+      latestCandle.trigger = triggerResult.uptrend.triggered || triggerResult.downtrend.triggered; // Add a triggered property to the latest candle
       enrichedArray.push(latestCandle)
       // if (trigger.triggered) {
       //   sendNotification(latestCandle, response.ticker);
       // }
-
+      if (i === numOfCandles-1) {
+        latestTriggerResult = triggerResult
+      }
     }
 
+  
     return {
-      ticker: response.ticker, data: enrichedArray
+      ticker: response.ticker, data: enrichedArray, triggerobj: latestTriggerResult
     }
   } catch (error) {
     console.error('Failed to process data:', error);
@@ -150,38 +157,53 @@ function createAvgVolumeCalculator(length = 100) {
 }
 
 
-function CheckTrigger(candle, prevcandle) {
-
-  if (!prevcandle) {
+function CheckTrigger(candle, prevCandle) {
+  
+  const aboveAvgVolume = candle.volume > candle.last100volavg;
+  if (!prevCandle) {
     //console.log("No previous candle found, cannot check trigger");
     return { triggered: false, conds: {} };
-  }
+      }
+ 
 
-  const AbvAvgVolume = candle.volume > candle.last100volavg;
-
-  // Current close above EMA200
-  const Aema200 = candle.close > candle.ema200;
-
-  // EMA50 above EMA200
-  const EMA50A200 = candle.ema50 > candle.ema200;
-
-  // RSI between 55 and 70 and increasing
-  const rsiB5070 = candle.rsi14 >= 50 && candle.rsi14 <= 70 //&& candle.rsi14 > prevcandle.rsi14;
-
-
-  // Current low below EMA21 and close above EMA21
-  const ema21bounce = candle.low <= candle.ema21 && candle.close > candle.ema21;
-
-  const trigger = Aema200 && EMA50A200 && rsiB5070 && AbvAvgVolume// && ema21bounce;
-  return {
-    "triggered": trigger, "conds": {
-      "Aema200": Aema200,
-      "EMA50A200": EMA50A200, "rsiB5570": rsiB5070, "AbvAvgVolume": AbvAvgVolume, "ema21bounce": ema21bounce
-    }
+        // ===== Uptrend Signals =====
+  const uptrend = {
+    aboveAvgVolume,
+    closeAboveEMA200: candle.close > candle.ema200,
+    ema50Above200: candle.ema50 > candle.ema200,
+    rsi50to70Up: candle.rsi14 >= 50 && candle.rsi14 <= 70 &&
+                 (!prevCandle || candle.rsi14 > prevCandle.rsi14),
+    ema21Bounce: candle.low <= candle.ema21 && candle.close > candle.ema21
   };
+
+        // ===== Downtrend Signals =====
+  const downtrend = {
+    aboveAvgVolume,
+    closeBelowEMA200: candle.close < candle.ema200,
+    ema50Below200: candle.ema50 < candle.ema200,
+    rsi30to50Down: candle.rsi14 <= 50 && candle.rsi14 >= 30 &&
+                   (!prevCandle || candle.rsi14 < prevCandle.rsi14),
+    ema21Reject: candle.high >= candle.ema21 && candle.close < candle.ema21
+  };
+
+  // Helper to format results
+  const formatResults = (name, signals) => ({
+    name,
+    triggered: Object.values(signals).every(Boolean),
+    conditions: Object.entries(signals).map(([key, value]) => ({
+      condition: key,
+      passed: value
+    }))
+  });
+
+  return {
+    uptrend: formatResults("Uptrend", uptrend),
+    downtrend: formatResults("Downtrend", downtrend)
+  };
+
 }
 
-function sendNotification(candle, ticker) {
+function sendNotification(candle, ticker, conditions) {
 
 const pctEmoji = (v) => {
   const num = Number(v);
@@ -189,6 +211,10 @@ const pctEmoji = (v) => {
     ? `📈 ${num.toFixed(2)}%`
     : `📉 ${num.toFixed(2)}%`;
 };
+
+const conditionsText = conditions
+  .map(c => `${c.condition}: ${c.passed ? "✅" : "❌"}`)
+  .join("\n");
 
     const message = `Coin: ${ticker}\n` +
 `Current Price: ${Number(candle.close).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}\n` +    
@@ -199,7 +225,8 @@ const pctEmoji = (v) => {
 `RSI-----------------------: ${candle.rsi14.toFixed(2)}\n` +
 `EMA21----------------: ${Number(candle.ema21).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}\n` +
 `EMA50----------------: ${Number(candle.ema50).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}\n` +
-`EMA200---------------: ${Number(candle.ema200).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}\n`
+`EMA200---------------: ${Number(candle.ema200).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}\n` +
+ `\nConditions:\n${conditionsText}`;
 
 
     // console.log(message)

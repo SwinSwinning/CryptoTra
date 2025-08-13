@@ -1,15 +1,15 @@
 const { fetchAPIData } = require('./APIservices/kraken');
 const { SaveToDB, DeleteAllfromDB, GetAllFromDB, GetFiltered } = require('./dbservices');
-const {PreprocessPairResponseData, sendNotification } = require('./synchelpers')
+const { PreprocessPairResponseData, sendNotification, CheckTrigger } = require('./synchelpers')
 
 
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 
 const HandleRet = async () => {
-     
+
   // 1. Fetching and Preprocessing for storage into db
-  const tradingpairs = ['ETHUSDT','XBTUSDT'];
+  const tradingpairs = ['ETHUSDT', 'XBTUSDT'];
   const response = await Fetch(tradingpairs);
   if (!response.success) {
     return response
@@ -19,26 +19,30 @@ const HandleRet = async () => {
   for (const pair of response.data) {
     // 2. Preprocess the response  
 
-   // Get the latest candle from the preprocessed data
+    // Get the latest candle from the preprocessed data
     preprocessed.push(PreprocessPairResponseData(pair)); // prepare the data from the response for storing in the DB 
-  const latestCandle = preprocessed[preprocessed.length-1].data[0];
+    const latestCandle = preprocessed[preprocessed.length - 1].data[0];
+    const triggerResult = preprocessed[preprocessed.length - 1].triggerobj;
     console.log(`Data for ${pair.ticker} Preprocessed successfully`)
-  
-try {
-      // 4. Sending notifications for triggers
-    
-    console.log("Sending notifications for triggers")
-    if (!latestCandle.trigger) {
 
-      console.log("Trigger detected for", pair.ticker, "at", latestCandle.timestamp);
-      sendNotification(latestCandle, pair.ticker);
-    }
-} catch (error) {
-  console.log(error);
-}
+    try {
+
+      // 3. Sending notifications for triggers
+      console.log("Sending notifications for triggers")
+      if (!latestCandle.trigger) {                      // Change this 
+        const conditions = triggerResult.downtrend.triggered ? triggerResult.downtrend.conditions :triggerResult.uptrend.conditions
  
+
+
+        console.log("Trigger detected for", pair.ticker, "at", latestCandle.timestamp);
+        sendNotification(latestCandle, pair.ticker, conditions);
+      }
+    } catch (error) {
+      console.log(error);
+    }
+
   }
-  // 3. Storing into database
+  // 4. Storing into database
   console.log("Storing into Database")
   const savedtodb = await SyncSave(preprocessed)
   if (!savedtodb.success) {
@@ -48,14 +52,14 @@ try {
 
 
 
-  // 4. Returning all records from Database
+  // 5. Returning all records from Database
   const records = await GetRecords();
   if (!records.success) {
     return records.msg
   }
   console.log("Successfully retrieved records from Database")
   return records
-    
+
 
 };
 
