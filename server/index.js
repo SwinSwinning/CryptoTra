@@ -11,23 +11,18 @@ const port = process.env.PORT || 8080;
 
 const cron = require('node-cron');
 
-const { PrismaClient } = require('@prisma/client');
-
-const prisma = new PrismaClient();
-
-
 app.use(express.json());
 app.use(cors());
 
 
-// cron.schedule('*/10 * * * *', async () => {
-// try {
-//   const records = await HandleRet(fullhistory=false);
-//   console.log('Cron job success:');
-// } catch (err) {
-//   console.error('Cron job failed:', err.message);
-// }
-// });
+cron.schedule('*/5 * * * *', async () => {
+try {
+  const records = await HandleRet(false);
+  console.log('Cron job success:');
+} catch (err) {
+  console.error('Cron job failed:', err.message);
+}
+});
 
 app.get('/', (req, res) => {
   res.send('API is running');
@@ -79,7 +74,7 @@ app.get('/ret', async (req, res) => {
   // const history = req.query.history === 'true'; // Convert query parameter to boolean
   try {
     const result = await HandleRet();
-    console.log("HandleRet completed");
+    //console.log("HandleRet completed");
         if (!result.success) {       
       return res.status(500).json(result);
     }

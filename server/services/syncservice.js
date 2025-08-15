@@ -2,6 +2,7 @@ const { fetchAPIData } = require('./APIservices/kraken');
 const { SaveToDB, DeleteAllfromDB, GetAllFromDB, GetFiltered } = require('./dbservices');
 const { PreprocessPairResponseData, sendNotification, CheckTrigger } = require('./synchelpers')
 
+const tradingPairs  = require('../tradingPairs.json')
 
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -9,7 +10,7 @@ const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 const HandleRet = async () => {
 
   // 1. Fetching and Preprocessing for storage into db
-  const tradingpairs = ['ETHUSDT', 'XBTUSDT'];
+  const tradingpairs = tradingPairs;
   const response = await Fetch(tradingpairs);
   if (!response.success) {
     return response
@@ -24,17 +25,15 @@ const HandleRet = async () => {
     const latestCandle = preprocessed[preprocessed.length - 1].data[0];
     const triggerResult = preprocessed[preprocessed.length - 1].triggerobj;
     console.log(`Data for ${pair.ticker} Preprocessed successfully`)
-
+//     if (pair.ticker === "XBTUSD") {
+// sendNotification(latestCandle, pair.ticker,  triggerResult.downtrend.triggered ? triggerResult.downtrend.conditions :triggerResult.uptrend.conditions);
+//     }
     try {
-
-      // 3. Sending notifications for triggers
-      console.log("Sending notifications for triggers")
-      if (!latestCandle.trigger) {                      // Change this 
-        const conditions = triggerResult.downtrend.triggered ? triggerResult.downtrend.conditions :triggerResult.uptrend.conditions
- 
-
-
-        console.log("Trigger detected for", pair.ticker, "at", latestCandle.timestamp);
+      // 3. Sending notifications if triggers 
+      if (latestCandle.trigger ) {                    
+        console.log("Sending notifications for triggers")
+        const conditions = triggerResult.uptrend.triggered ? triggerResult.uptrend.conditions :triggerResult.downtrend.conditions
+         console.log("Trigger detected for", pair.ticker, "at", latestCandle.timestamp);
         sendNotification(latestCandle, pair.ticker, conditions);
       }
     } catch (error) {

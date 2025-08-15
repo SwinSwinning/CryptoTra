@@ -3,12 +3,13 @@ const { sendTelegramMessage } = require('./telegram');
 
 
 
+
 const PreprocessPairResponseData = (response) => {
 
   try {
 
     //console.log(response.data.data.result[response.ticker])
-    const ohlcvdata = response.data.data.result[response.ticker];
+    const ohlcvdata = Object.values(response.data.data.result)[0]
     // console.log(ohlcvdata.slice(ohlcvdata.length-5,ohlcvdata.length)) // Log the last 5 elements of the ohlcvdata array
 
     const numCandlesForCalc = 700 // Need at least 289 candles to calculate all the indicators
@@ -26,7 +27,6 @@ const PreprocessPairResponseData = (response) => {
     const indicators = ["ema21", "ema50", "ema200", "rsi14"];
     const calcIndicators = createCalculateIndicators(indicators);
     const avgVol = createAvgVolumeCalculator(100);
-    console.log(response.ticker)
     for (const candle of candleArray) {
       const result = { ...candle, ...calcIndicators(candle) };
       result.last100volavg = avgVol(result.volume);
@@ -157,7 +157,7 @@ function createAvgVolumeCalculator(length = 100) {
 }
 
 
-function CheckTrigger(candle, prevCandle) {
+function CheckTrigger(candle, prevCandle, minConditions = 3) {
   
   const aboveAvgVolume = candle.volume > candle.last100volavg;
   if (!prevCandle) {
@@ -187,14 +187,22 @@ function CheckTrigger(candle, prevCandle) {
   };
 
   // Helper to format results
-  const formatResults = (name, signals) => ({
-    name,
-    triggered: Object.values(signals).every(Boolean),
-    conditions: Object.entries(signals).map(([key, value]) => ({
-      condition: key,
-      passed: value
-    }))
-  });
+  const formatResults = (name, signals) => {
+    const otherConditions = Object.entries(signals)
+      .filter(([key]) => key !== "aboveAvgVolume")
+      .map(([key, value]) => ({ condition: key, passed: value }));
+
+    const passedCount = otherConditions.filter(c => c.passed).length;
+    const triggered = signals.aboveAvgVolume && passedCount >= minConditions;
+        return {
+      name,
+      triggered,
+      conditions: [
+        { condition: "aboveAvgVolume", passed: signals.aboveAvgVolume },
+        ...otherConditions
+      ]
+    };
+  };
 
   return {
     uptrend: formatResults("Uptrend", uptrend),
