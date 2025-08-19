@@ -15,14 +15,14 @@ app.use(express.json());
 app.use(cors());
 
 
-cron.schedule('*/5 * * * *', async () => {
-try {
-  const records = await HandleRet(false);
-  console.log('Cron job success:');
-} catch (err) {
-  console.error('Cron job failed:', err.message);
-}
-});
+// cron.schedule('*/5 * * * *', async () => {
+// try {
+//   const records = await HandleRet(false);
+//   console.log('Cron job success:');
+// } catch (err) {
+//   console.error('Cron job failed:', err.message);
+// }
+// });
 
 app.get('/', (req, res) => {
   res.send('API is running');

@@ -62,7 +62,7 @@ const PreprocessPairResponseData = (response) => {
       // if (trigger.triggered) {
       //   sendNotification(latestCandle, response.ticker);
       // }
-      if (i === numOfCandles-1) {
+      if (i === 0) {
         latestTriggerResult = triggerResult
       }
     }
@@ -157,9 +157,9 @@ function createAvgVolumeCalculator(length = 100) {
 }
 
 
-function CheckTrigger(candle, prevCandle, minConditions = 3) {
+function CheckTrigger(candle, prevCandle, minConditions = 2) {
   
-  const aboveAvgVolume = candle.volume > candle.last100volavg;
+  const aboveAvgVolume = candle.volume > candle.last100volavg*0.7; // Check if the current volume is above 70% of the average volume
   if (!prevCandle) {
     //console.log("No previous candle found, cannot check trigger");
     return { triggered: false, conds: {} };
@@ -193,7 +193,8 @@ function CheckTrigger(candle, prevCandle, minConditions = 3) {
       .map(([key, value]) => ({ condition: key, passed: value }));
 
     const passedCount = otherConditions.filter(c => c.passed).length;
-    const triggered = signals.aboveAvgVolume && passedCount >= minConditions;
+    
+    const triggered = signals.aboveAvgVolume &&  ( passedCount >= minConditions);
         return {
       name,
       triggered,

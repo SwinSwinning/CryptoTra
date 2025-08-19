@@ -25,14 +25,21 @@ const HandleRet = async () => {
     const latestCandle = preprocessed[preprocessed.length - 1].data[0];
     const triggerResult = preprocessed[preprocessed.length - 1].triggerobj;
     console.log(`Data for ${pair.ticker} Preprocessed successfully`)
+    // console.log(latestCandle)
 //     if (pair.ticker === "XBTUSD") {
 // sendNotification(latestCandle, pair.ticker,  triggerResult.downtrend.triggered ? triggerResult.downtrend.conditions :triggerResult.uptrend.conditions);
 //     }
     try {
       // 3. Sending notifications if triggers 
+      let conditions = {}
       if (latestCandle.trigger ) {                    
         console.log("Sending notifications for triggers")
-        const conditions = triggerResult.uptrend.triggered ? triggerResult.uptrend.conditions :triggerResult.downtrend.conditions
+        if (triggerResult.uptrend.triggered) {
+          conditions = triggerResult.uptrend.conditions
+        } else if (triggerResult.downtrend.triggered) {
+            conditions = triggerResult.downtrend.conditions
+        }
+        // const conditions = triggerResult.uptrend.triggered ? triggerResult.uptrend.conditions :triggerResult.downtrend.conditions
          console.log("Trigger detected for", pair.ticker, "at", latestCandle.timestamp);
         sendNotification(latestCandle, pair.ticker, conditions);
       }
