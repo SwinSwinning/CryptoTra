@@ -101,7 +101,7 @@ app.get('/getrecords', async (req, res) => {
       const data = await GetRecords();
     
       res.json({ success: true, data })
-      console.log(data.count)
+      //console.log(data.count)
     }
 
 

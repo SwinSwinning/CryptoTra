@@ -7,7 +7,7 @@ import 'react-toastify/dist/ReactToastify.css';
 function App() {
 
   const [allRecords, setAllRecords] = useState([]);
-  const [currentRecords, setCurrentRecords] = useState([]);  // <---- Start here
+  const [currentRecords, setCurrentRecords] = useState([]);
   const [error, setError] = useState(null); // State to hold error messages
   const [showDropdown, setShowDropdown] = useState(false);
   const [uniqueNames, setUniqueNames] = useState([]);
@@ -17,13 +17,13 @@ function App() {
   useEffect(() => {
     async function fetchData() {
       try {
-    const res = await fetch(`http://localhost:8080/getrecords`);
-    const data = await res.json();
+        const res = await fetch(`http://localhost:8080/getrecords`);
+        const data = await res.json();
 
-    
-    const rawRecords = Object.values(data.data.data)
-    setAllRecords(rawRecords)
-    // setFilteredRecords(rawRecords)
+        const rawRecords = Object.values(data.data.data)
+        SetStates(rawRecords)
+
+
       } catch (err) {
         console.error("Failed to fetch data:", err);
       }
@@ -31,12 +31,6 @@ function App() {
 
     fetchData();
   }, []);
-
-  useEffect(() => {
-  // This runs every time `records` changes
-  RefreshUI();
-}, [allRecords]);
-
 
 
   const fetchRecords = async () => {
@@ -49,9 +43,12 @@ function App() {
     if (data.success) {
       const rawRecords = Object.values(data.records.data)
       console.log(rawRecords)
-      setAllRecords(rawRecords);    // Set the records state
-      setUniqueNames([...new Set(rawRecords.map((r) => r.ticker))]);       // use refreshui here??!?!?!
-     RefreshUI()
+
+      // setAllRecords(rawRecords);    // Set the records state
+      // setCurrentRecords(rawRecords)
+      // setUniqueNames([...new Set(rawRecords.map((r) => r.ticker))]);       // use refreshui here??!?!?!
+
+      SetStates(rawRecords)
       toast.success("Records retrieved successfully");
     }
     else {
@@ -87,39 +84,32 @@ function App() {
   };
 
   const ShowRecords = () => {
-    console.log(records);
+    console.log(allRecords);
+    toast.success(totalRecordCount);
+
+
 
   };
 
 
 
   const toggleDropdown = () => {
-    console.log("toggleDropdown called");
-
     setShowDropdown((prev) => !prev);
   };
 
-  const handleSelect = async (ticker) => {
+  const handleSelect = (ticker) => {
+    setShowDropdown(false);
+    const tofilter = true
+    const filtered = allRecords.filter(r => r.ticker === ticker);
+    SetStates(filtered, tofilter);
+
+  }
+
+  const ClearFilter = () => {
     setShowDropdown(false);
     try {
-      const res = await fetch(`http://localhost:8080/getrecords?ticker=${encodeURIComponent(ticker)}`); //Can I use the records state here to not have to fetch again?
-      const data = await res.json();
-      console.log("data", data)
-      const rawRecords = Object.values(data.data.data)
+      SetStates(allRecords)
 
-      setAllRecords(rawRecords);
-
-    } catch (error) {
-      console.error("Error fetching records:", error);
-    }
-  };
-
-  const ClearFilter = async () => {     // remove async?
-    setShowDropdown(false);
-    try {
-      setCurrentRecords(allRecords)
-      
-      RefreshUI();
 
     } catch (error) {
       console.error("Error Clearing Filter");  // Is this one necesary?
@@ -127,30 +117,54 @@ function App() {
   };
 
 
-    const RefreshUI = async () => {         // remove Async ? 
-    
-    console.log("unique names: ", uniqueNames.length)  
-    setCurrentRecords(allRecords)  
+  const SetStates = (rawRecords, tofilter = false) => {        // Every setX call will automatically cal a re-render 
+    const topRecordsPerTicker = {};
+    const uniqueNamesSet = new Set();
 
-    // setUniqueNames([...new Set(records.map((r) => r.ticker))]);  
- 
-    setTotalRecordCount(allRecords.length); // Set the total record count
-    
+    for (const rec of rawRecords) {
+      uniqueNamesSet.add(rec.ticker);
+
+      if (!topRecordsPerTicker[rec.ticker]) {
+        topRecordsPerTicker[rec.ticker] = [];
+      }
+
+      // Insert into array maintaining at most 5 largest timestamps
+      const arr = topRecordsPerTicker[rec.ticker];
+      arr.push(rec);
+      arr.sort((a, b) => b.timestamp - a.timestamp); // newest first
+      if (arr.length > 5) arr.pop(); // keep only 5
+    }
+
+    // flatten all tickers into one array
+    const limited = Object.values(topRecordsPerTicker).flat();
+
+    // final sort across all tickers
+    limited.sort((a, b) => b.timestamp - a.timestamp);
+
+    if (!tofilter) {
+      setAllRecords(rawRecords)
+      setUniqueNames([...uniqueNamesSet]);
+      setTotalRecordCount(rawRecords.length);
+    }
+
+    setCurrentRecords(limited);
+
+
   }
 
   // const RefreshUI = async () => {
   //   const res = await fetch(`http://localhost:8080/getrecords`);
   //   const data = await res.json();
   //   console.log(uniqueNames)
-    
+
   //   const rawRecords = Object.values(data.data.data)
   //   // console.log("rawRecords", rawRecords)
   //   setUniqueNames([...new Set(rawRecords.map((r) => r.ticker))]);
-    
+
   //   //setRecords(rawRecords);
   //   setTotalRecordCount(rawRecords.length); // Set the total record count
-    
-// }
+
+  // }
 
 
 
