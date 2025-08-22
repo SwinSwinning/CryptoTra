@@ -5,7 +5,7 @@ import 'react-toastify/dist/ReactToastify.css';
 
 
 function App() {
-
+  const [loading, setLoading] = useState(false)
   const [allRecords, setAllRecords] = useState([]);
   const [currentRecords, setCurrentRecords] = useState([]);
   const [error, setError] = useState(null); // State to hold error messages
@@ -37,25 +37,33 @@ function App() {
     console.log(allRecords.length > 0 ? "Fetching new records" : "Fetching records for the first time"); // add ticker condition also
     const last20 = allRecords.length == 0; // add ticker condition also
 
-    const res = await fetch(`http://localhost:8080/ret?history=${last20}`); // retrieve new records from the server   Dont need to specify last20
-    const data = await res.json();
 
-    if (data.success) {
-      const rawRecords = Object.values(data.records.data)
-      console.log(rawRecords)
+    try {
+      setLoading(true)
+      const res = await fetch(`http://localhost:8080/ret?history=${last20}`); // retrieve new records from the server   Dont need to specify last20
+      const data = await res.json();
 
-      // setAllRecords(rawRecords);    // Set the records state
-      // setCurrentRecords(rawRecords)
-      // setUniqueNames([...new Set(rawRecords.map((r) => r.ticker))]);       // use refreshui here??!?!?!
+      if (data.success) {
+        const rawRecords = Object.values(data.records.data)
+        console.log(rawRecords)
 
-      SetStates(rawRecords)
-      toast.success("Records retrieved successfully");
+        SetStates(rawRecords)
+        toast.success("Records retrieved successfully");
+      }
+      else {
+        setError(data.msg);
+        toast.error(data.msg || "Failed to download new records");
+        console.log(error)
+      }
+    } catch (err) {
+      console.error("Fetch failed:", err);
+      toast.error("Network or server error while fetching records");
+
+    } finally {
+      setLoading(false)
     }
-    else {
-      setError(data.msg);
-      toast.error(data.msg || "Failed to download new records");
-      console.log(error)
-    }
+
+
   };
 
   const deleteRecords = async () => {
@@ -216,6 +224,9 @@ function App() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
+
+
+
             {currentRecords.length > 0 ? (
               currentRecords.map((record) => (
                 <tr key={record.id} className="table-row">
@@ -228,53 +239,46 @@ function App() {
                   <td className="table-cell">{Number(record.last144change).toFixed(2)}</td>
                   <td className="table-cell">{Number(record.last288change).toFixed(2)}</td>
                 </tr>
-              ))) : (
-              <tr>
-                <td colSpan="5" className="text-red-500 text-center px-4 py-2">
-                  No records found
+              ))) : loading ? (
+                <tr>
+                  <td colSpan="8" className="text-center py-4">
+                <div className="flex items-center">
+                  <svg
+                    className="animate-spin h-5 w-5 mr-3 text-blue-500"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                      fill="none"
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8v4l3-3-3-3v4a12 12 0 00-12 12h4z"
+                    />
+                  </svg>
+                  <span>Loading...</span>
+                </div>
                 </td>
-              </tr>
-            )}
-
-
+                </tr>
+              )
+              : (
+                <tr>
+                  <td colSpan="5" className="text-red-500 text-center px-4 py-2">
+                    No records found
+                  </td>
+                </tr>
+              )}
           </tbody>
         </table>
 
-        {/* <div className="flex-1 relative inline-block border-2">
-          <div onClick={toggleDropdown} className=" font-bold cursor-pointer">
-            UCID
-          </div>
-
-          {showDropdown && (
-            <ul className="absolute left-0 top-full border mt-1 w-48 bg-white shadow-md z-10">
-              <li className='p-2 hover:bg-gray-100' onClick={() => ClearFilter()} >Clear Filter</li>
-              {uniqueNames.map((UCID) => (
-                <li key={UCID}
-                  onClick={() => handleSelect(UCID)}
-                  className="p-2 hover:bg-gray-100">
-                  {UCID}
-                </li>
-              ))}
-            </ul>
-          )}
-        </div> */}
 
 
-        {/* <nav aria-label="Page navigation example">
-        <ul class="inline-flex -space-x-px text-base h-10">
-          <li>
-            <a href="#" class="flex items-center justify-center px-4 h-10 ms-0 leading-tight text-gray-500 bg-white border border-e-0 border-gray-300 rounded-s-lg hover:bg-gray-100 hover:text-gray-700 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white">Previous</a>
-          </li>
-
-          <li>
-            <a href="#" aria-current="page" class="flex items-center justify-center px-4 h-10 text-blue-600 border border-gray-300 bg-blue-50 hover:bg-blue-100 hover:text-blue-700 dark:border-gray-700 dark:bg-gray-700 dark:text-white">{currentPage}</a>
-          </li>
-
-          <li>
-            <a onClick={NextPaginate} class="flex items-center justify-center px-4 h-10 leading-tight text-gray-500 bg-white border border-gray-300 rounded-e-lg hover:bg-gray-100 hover:text-gray-700 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white">Next</a>
-          </li>
-        </ul>
-      </nav> */}
       </div>
       <div className='footer'> Placeholder for footer
         <div className="flex gap-4">
