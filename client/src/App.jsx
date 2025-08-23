@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import  Logo  from './assets/FCmFwG01currentColor.svg';
 
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -91,13 +92,7 @@ function App() {
 
   };
 
-  const ShowRecords = () => {
-    console.log(allRecords);
-    toast.success(totalRecordCount);
 
-
-
-  };
 
 
 
@@ -125,7 +120,7 @@ function App() {
   };
 
 
-  const SetStates = (rawRecords, tofilter = false) => {        // Every setX call will automatically cal a re-render 
+  const SetStates = (rawRecords, tofilter = false) => {        
     const topRecordsPerTicker = {};
     const uniqueNamesSet = new Set();
 
@@ -160,26 +155,10 @@ function App() {
 
   }
 
-  // const RefreshUI = async () => {
-  //   const res = await fetch(`http://localhost:8080/getrecords`);
-  //   const data = await res.json();
-  //   console.log(uniqueNames)
-
-  //   const rawRecords = Object.values(data.data.data)
-  //   // console.log("rawRecords", rawRecords)
-  //   setUniqueNames([...new Set(rawRecords.map((r) => r.ticker))]);
-
-  //   //setRecords(rawRecords);
-  //   setTotalRecordCount(rawRecords.length); // Set the total record count
-
-  // }
-
-
-
   return (
-    <div>
+    <div className="flex flex-col min-h-screen">
       <header className="text-center bg-gray-100 p-3">
-        <h1 className="text-indigo-600 mb-5">Crypto Tracker</h1>
+        <h1 className="text-indigo-500 mb-5">Crypto Tracker</h1>
         <div className="flex gap-4">
           <button onClick={() => fetchRecords()} className='flex-1'>Retrieve Records</button>
 
@@ -194,10 +173,7 @@ function App() {
 
       />
 
-
-
-
-      <div className="w-full">
+      <div className="w-full flex-grow">
         <table className="w-full divide-y-2 divide-gray-200 table-fixed">
           <thead className="table-header">
             <tr className='space-between'>
@@ -225,26 +201,13 @@ function App() {
           </thead>
           <tbody className="divide-y divide-gray-200">
 
-
-
-            {currentRecords.length > 0 ? (
-              currentRecords.map((record) => (
-                <tr key={record.id} className="table-row">
-                  <td className="table-cell">{record.timestamp}</td>
-                  <td className="table-cell">{record.ticker}</td>
-                  <td className="table-cell">{record.name}</td>
-                  <td className="table-cell">{record.price}</td>
-                  <td className="table-cell">{Number(record.last1change).toFixed(2)}</td>
-                  <td className="table-cell">{Number(record.last77change).toFixed(2)}</td>
-                  <td className="table-cell">{Number(record.last144change).toFixed(2)}</td>
-                  <td className="table-cell">{Number(record.last288change).toFixed(2)}</td>
-                </tr>
-              ))) : loading ? (
+            
+           { loading ? (
                 <tr>
                   <td colSpan="8" className="text-center py-4">
-                <div className="flex items-center">
+                <div className="flex justify-center items-center">
                   <svg
-                    className="animate-spin h-5 w-5 mr-3 text-blue-500"
+                    className="animate-spin h-10 w-10 mr-3 text-indigo-500"
                     viewBox="0 0 24 24"
                   >
                     <circle
@@ -262,12 +225,25 @@ function App() {
                       d="M4 12a8 8 0 018-8v4l3-3-3-3v4a12 12 0 00-12 12h4z"
                     />
                   </svg>
-                  <span>Loading...</span>
+                  <span>Fetching...</span>
                 </div>
                 </td>
                 </tr>
-              )
-              : (
+              ): 
+
+            currentRecords.length > 0 ? (
+              currentRecords.map((record) => (
+                <tr key={record.id} className="table-row">
+                  <td className="table-cell">{record.timestamp}</td>
+                  <td className="table-cell">{record.ticker}</td>
+                  <td className="table-cell">{record.name}</td>
+                  <td className="table-cell">{record.price}</td>
+                  <td className="table-cell">{Number(record.last1change).toFixed(2)}</td>
+                  <td className="table-cell">{Number(record.last77change).toFixed(2)}</td>
+                  <td className="table-cell">{Number(record.last144change).toFixed(2)}</td>
+                  <td className="table-cell">{Number(record.last288change).toFixed(2)}</td>
+                </tr>
+              )))   : (
                 <tr>
                   <td colSpan="5" className="text-red-500 text-center px-4 py-2">
                     No records found
@@ -280,9 +256,12 @@ function App() {
 
 
       </div>
-      <div className='footer'> Placeholder for footer
-        <div className="flex gap-4">
-          <button onClick={ShowRecords} className='flex-1'>Show FE records</button>
+      <div className='footer text-white flex items-center justify-center bg-indigo-500 min-h-20'> 
+        <div className="flex items-center gap-20">
+          <p>Link to Github</p>
+            <img src={Logo} alt="Logo" className="h-15 w-15" />
+  
+          <p>All rights reseverd</p>        
         </div>
       </div>
     </div>
