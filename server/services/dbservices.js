@@ -48,102 +48,54 @@ const valuesSQL = tosave
   )`).join(",");
 
   // Execute raw SQL to insert data because sqlite does not support ON CONFLICT DO NOTHING
-  await prisma.$executeRawUnsafe(`
+   await prisma.$executeRawUnsafe(`
   INSERT OR IGNORE INTO Candle
     (ticker, timestamp, name, price, volume, ema21, ema50, ema200, rsi14, last1change, last77change, last144change, last288change, trigger)
   VALUES ${valuesSQL}
 `);
-    // await prisma.candle.createMany({
-    //   data: tosave      
-    // })
 
     
-    return { success: true, msg: "Data saved successfully to database" }
+    // return { success: true, msg: "Data saved successfully to database" }
   } catch (error) {
     console.error('Failed to save data to database:', error);
-    return { success: false, msg: "Failed to save data to database" + error }; // Return an error object
+       throw new Error("Failed to Save to database " + error.message); // Return an error object
   }
 };
 
 const DeleteAllfromDB = async () => {
 
   try {
-    await prisma.candle.deleteMany({})
-    return {success: true, msg:"Successfully Cleared the Database"} ; 
+    return await prisma.candle.deleteMany({})
 
   } catch (error) {
-    console.error('Error deleting data from database:', error);
-    throw new Error("Failed to Delete from database " + error.message); // Return an error object
+    console.error('Error deleting data from database:', error);    
+    throw new Error("Failed to Delete from database " + error.message); 
+
   }
 
 };
 
-const GetAllFromDB = async (pagenumber, maxrecords) => {
-
-
+const GetCandlesDB = async (ticker=null) => {
   try {
-    const total_records = await prisma.candle.count(); // Get the total number of records
-    candles = await prisma.candle.findMany({
-      orderBy: [
-        {
-          timestamp: 'desc',
-        }
-      ]
-    })
+    // const total_records = await prisma.candle.count(); // Get the total number of records
 
-    return { success: true, msg: "All records from DB retrieved", data: candles, count: total_records }; // Return the retrieved data 
+    const query = {
+      orderBy: [{ timestamp: 'desc' }],
+    };
+    if (ticker) {
+      query.where = { ticker };
+    }
+      const candles = await prisma.candle.findMany(query)
+    return candles; // Return the retrieved data 
 
   } catch (error) {
     console.error('Error retrieving from database:', error);
-    return { success: false, msg: "Failed to retrieve from database" }; // Return an error object
+    throw new Error("Failed to Retrieve from database " + error.message); 
   }
 
 };
 
-const GetFiltered = async (ticker) => {
-
-  try {
-    filteredcandles = await prisma.candle.findMany({
-      orderBy: [
-        {
-          timestamp: 'desc',
-        }
-      ],
-      where: {
-        ticker: ticker,
-      },
-    })
-    return { success: true, msg: "Record(s) found and returned", data: filteredcandles }; // Return the retrieved data
-  } catch (error) {
-    console.error('REcord not found:', error);
-    return { success: false, msg: "record not found" }; // Return an error object
-
-  }
-
-};
-
-
-const getFullHistoryFlags = async (tickers, thresholdSeconds) => {
-  const now = Math.floor(Date.now() / 1000);
-
-  const latestPerPair = await prisma.candle.groupBy({
-    by: ['ticker'],
-    _max: { timestamp: true }
-  });
-
-  const latestMap = Object.fromEntries(
-    latestPerPair.map(e => [e.ticker, e._max.timestamp])
-  );
-
-  const result = {};
-  for (const ticker of tickers) {
-    const latest = latestMap[ticker];
-    result[ticker] = !latest || (now - latest > thresholdSeconds);
-  }
-
-  return result; // { XBTUSDT: true, ETHUSDT: false, ... }
-};
 
 module.exports = {
-  getFullHistoryFlags, SaveToDB, DeleteAllfromDB, GetAllFromDB, GetFiltered
+  SaveToDB, DeleteAllfromDB, GetCandlesDB
 };
