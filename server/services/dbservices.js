@@ -1,8 +1,11 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
+
+
 const SaveToDB = async (parsedCandleData) => {
   // console.log("Saving to DB", candles[0])
+
 
   try {
     const tosave = []
