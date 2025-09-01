@@ -1,5 +1,5 @@
 require('dotenv').config()
-const {  HandleRet, DeleteAllRecords, GetRecords} = require('../server/services/syncservice');
+const {  HandleRet, DeleteAllRecords, GetRecords} = require('./services/syncservice');
 
 
 
