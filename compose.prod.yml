@@ -1,15 +1,15 @@
 services:
   backend:
     build:
-      context: ./backend
+      context: ./server
       dockerfile: Dockerfile
     ports:
       - "3001:3001"
   frontend:
     build:
-      context: ./frontend
+      context: ./client
       dockerfile: Dockerfile
     ports:
       - "80:80"
     depends_on:
-      - backend
+      - server
