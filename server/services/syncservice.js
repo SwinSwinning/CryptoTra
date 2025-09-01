@@ -2,7 +2,7 @@ const { fetchAPIData } = require('./APIservices/kraken');
 const { SaveToDB, DeleteAllfromDB, GetCandlesDB } = require('./dbservices');
 const { PreprocessPairResponseData, sendNotification, CheckTrigger } = require('./synchelpers')
 
-const tradingPairs = require('../tradingPairs.json')
+const tradingPairs = require('../tradingpairs.json')
 
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 

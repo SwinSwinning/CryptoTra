@@ -2,7 +2,8 @@ FROM node:20-alpine
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci
-RUN npx prisma generate
+
 # source will be mounted; keep node_modules inside container
 EXPOSE 3001
-CMD ["npm","run","dev"]
+CMD ["sh", "-c", "npx prisma generate && npm run dev"]
+
