@@ -18,8 +18,8 @@ CryptoTraNot is a **crypto tracking and alert application** that fetches live ca
 ### 2. Clone the Repository
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/cryptotranot.git
-cd cryptotranot
+git clone https://github.com/SwinSwinning/CryptoTra.git
+cd CryptoTra
 ```
 
 ---
@@ -131,4 +131,4 @@ cryptotranot/
 ## 🧑‍💻 Author
 
 * Your Name
-* [Your GitHub](https://github.com/YOUR_USERNAME)
+* [Your GitHub](https://github.com/SwinSwinning)
