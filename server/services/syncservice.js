@@ -1,4 +1,5 @@
-const { fetchAPIData } = require('./APIservices/kraken');
+const { KrakenfetchAPIData } = require('./APIservices/kraken');
+const { CMCGainersLosers } = require('./APIservices/cmc');
 const { SaveToDB, DeleteAllfromDB, GetCandlesDB } = require('./dbservices');
 const { PreprocessPairResponseData, sendNotification, CheckTrigger } = require('./synchelpers')
 
@@ -46,12 +47,26 @@ const HandleRet = async () => {
 
 };
 
-const Fetch = async (tradingpairsArr) => {
+const FetchGainersLosers = async (tradingpairsArr) => {
 
   const result = []
   for (const pair of tradingpairsArr) {
     console.log("Retrieving data for pair:", pair);
     const response = await fetchAPIData(pair);     // Fetch external API data    
+ 
+    result.push({ ticker: pair, data: response });
+    await sleep(800); // Sleep to avoid hitting the API rate limit
+  }
+  return result
+}
+
+
+const Fetch = async (tradingpairsArr) => {
+
+  const result = []
+  for (const pair of tradingpairsArr) {
+    console.log("Retrieving data for pair:", pair);
+    const response = await KrakenfetchAPIData(pair);     // Fetch external API data    
  
     result.push({ ticker: pair, data: response });
     await sleep(800); // Sleep to avoid hitting the API rate limit

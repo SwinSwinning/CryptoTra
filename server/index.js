@@ -1,5 +1,7 @@
 require('dotenv').config()
 const {  HandleRet, DeleteAllRecords, GetRecords} = require('./services/syncservice');
+const { CMCfetchAPIData, CMCGainersLosers } = require('./services/APIservices/cmc');
+const { CompareCMCKRaken } = require('./services/synchelpers');
 
 
 
@@ -73,6 +75,28 @@ app.get('/getrecords', async (req, res) => {
   }
 }
 );
+
+app.get('/mer', (req, res) => {
+
+  try {
+    const result = CompareCMCKRaken();
+    console.log(result)
+  } catch (error) {
+    console.log('Error in merge route:' + error.message);
+    return res.status(500).json({ success: false, msg: error.message });
+  }
+});
+
+app.get('/cmc', async (req, res) => {
+
+  try {
+    const result = await CMCGainersLosers();
+    return res.json({ success: true, records: result });
+  } catch (error) {
+    console.log('Error in /cmc route:' + error.message);
+    return res.status(500).json({ success: false, msg: error.message });
+  }
+});
 
 app.listen(port, '0.0.0.0',  () => {
   console.log(`Server running on http://localhost:${port}`);

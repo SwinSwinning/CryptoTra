@@ -29,23 +29,58 @@ convert_id: 825
 };
 
 
- const fetchAPIData = async () => {
+
+ const CMCfetchAPIData = async () => {
     try {
         const response = await axios.get(url, {
             headers: {
                 'X-CMC_PRO_API_KEY': apiKey
             },
             params: parameters
-        });        
+        });             
 
-         return {success: true, msg:"Successfully fetched from API", data: response.data};         
+         return response.data
         } catch (error){
     console.error('Error fetching data from API:', error); 
-    return { success: false, msg: "Failed to fetch data from API" }; // Return an error object   
+    throw new Error("Failed to fetch data from CMC API " + error.message); // Return an error object
         }
 }
 
-module.exports = { fetchAPIData};
+ const CMCGainersLosers = async () => {
+    try {
+        const response = await axios.get('https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest?limit=200', {
+            headers: {
+                'X-CMC_PRO_API_KEY': apiKey
+            },
+            params: parameters
+        });        
+
+         return response.data
+        } catch (error){
+    console.error('Error fetching data from API:', error); 
+    throw new Error("Failed to fetch data from CMC API " + error.message); // Return an error object
+        }
+}
+
+// const KrakenfetchAPIData = async (pair) => {
+//     const parameters = {
+//         interval: 5,
+//         pair: pair,
+
+//     };
+//     try {
+//         const response = await axios.get(url, {
+//             params: parameters
+//         });
+
+//         return response
+//     } catch (error) {
+//         throw new Error("Failed retrieve data from API " + error.message);
+//     }
+// }
+
+
+module.exports = { CMCfetchAPIData, CMCGainersLosers};
 
 
 

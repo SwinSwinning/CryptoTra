@@ -1,5 +1,9 @@
-const { createRsiCalculator, createEmaCalculator } = require('./tahelpers'); 
+const { createRsiCalculator, createEmaCalculator } = require('./tahelpers');
 const { sendTelegramMessage } = require('./telegram');
+
+// const { file1 } = require('./cmc.json')
+// const { file2 } = require('./kraken.json')
+
 
 
 const PreprocessPairResponseData = (response) => {
@@ -59,10 +63,9 @@ const PreprocessPairResponseData = (response) => {
 }
 
 function Assign(candle) {
-  const [timestamp, , , low, close, , volume] = candle; // assign the candle data to the variables timestamp, low, close, and volume 
+  const [timestamp, , , , close, , volume] = candle; // assign the candle data to the variables timestamp, close, and volume 
   const result = {
     timestamp,
-    low,
     close,
     volume
   }
@@ -70,7 +73,19 @@ function Assign(candle) {
   return result
 }
 
-function EnrichCurrentCandle(arr) { 
+// function Assign(candle) {
+//   const [timestamp, , , low, close, , volume] = candle; // assign the candle data to the variables timestamp, low, close, and volume 
+//   const result = {
+//     timestamp,
+//     low,
+//     close,
+//     volume
+//   }
+
+//   return result
+// }
+
+function EnrichCurrentCandle(arr) {
   const currentCandle = arr[arr.length - 1];
   const periods = [1, 77, 144, 288];
   periods.forEach((p) => {
@@ -146,8 +161,7 @@ function CheckTrigger(candle, prevCandle, minConditions = 2) {
     closeAboveEMA200: candle.close > candle.ema200,
     ema50Above200: candle.ema50 > candle.ema200,
     rsi50to70Up: candle.rsi14 >= 50 && candle.rsi14 <= 70 &&
-      (!prevCandle || candle.rsi14 > prevCandle.rsi14),
-    ema21Bounce: candle.low <= candle.ema21 && candle.close > candle.ema21
+      (!prevCandle || candle.rsi14 > prevCandle.rsi14)
   };
 
   // ===== Downtrend Signals =====
@@ -156,8 +170,7 @@ function CheckTrigger(candle, prevCandle, minConditions = 2) {
     closeBelowEMA200: candle.close < candle.ema200,
     ema50Below200: candle.ema50 < candle.ema200,
     rsi30to50Down: candle.rsi14 <= 50 && candle.rsi14 >= 30 &&
-      (!prevCandle || candle.rsi14 < prevCandle.rsi14),
-    ema21Reject: candle.high >= candle.ema21 && candle.close < candle.ema21
+      (!prevCandle || candle.rsi14 < prevCandle.rsi14)
   };
 
   // Helper to format results
@@ -218,7 +231,56 @@ function sendNotification(candle, ticker, conditions) {
 }
 
 
+function CompareCMCKRaken() {
+  const cmc = require('./cmc.json');
+  const kraken = require('./kraken.json');
+
+  const symbolMap = {   // add here any other symbols that differ between CMC and Kraken
+    BTC: "XBT",
+    DOGE: "XDG",
+    FRAX: "FXS",
+    AXL: "WAXL",
+  };
+
+
+  const result = [];
+  const notfound = []
+
+  // Build lookup from Kraken by altname
+  const krakenSymbols = new Set();
+  for (const [key, val] of Object.entries(kraken.result)) {
+    krakenSymbols.add(key);
+    krakenSymbols.add(val.altname);
+  }
+
+  // Walk through CMC symbols
+  for (const coin of cmc.data) {
+    const cmcSym = coin.symbol;
+    const mappedSym = symbolMap[cmcSym] || cmcSym;
+
+    if (krakenSymbols.has(mappedSym)) {
+      const usd = coin.quote?.USD;
+
+      result.push({
+        symbol: cmcSym,
+        name: coin.name,
+        price: usd?.price ?? null,
+        percent_change_1h: usd?.percent_change_1h ?? null,
+        percent_change_24h: usd?.percent_change_24h ?? null,
+        percent_change_7d: usd?.percent_change_7d ?? null,
+        percent_change_30d: usd?.percent_change_30d ?? null
+      });
+    }
+    else {
+      notfound.push(coin.symbol)
+    }
+  }
+
+  return result;
+}
+
+
 
 module.exports = {
-  PreprocessPairResponseData, CheckTrigger, sendNotification
+  PreprocessPairResponseData, CompareCMCKRaken, sendNotification
 };

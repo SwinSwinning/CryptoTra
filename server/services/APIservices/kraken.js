@@ -2,7 +2,7 @@ const axios = require('axios');
 
 const url = "https://api.kraken.com/0/public/OHLC"
 
-const fetchAPIData = async (pair) => {
+const KrakenfetchAPIData = async (pair) => {
     const parameters = {
         interval: 5,
         pair: pair,
@@ -36,6 +36,6 @@ const fetchAPIData = async (pair) => {
 //     }
 // }
 
-module.exports = { fetchAPIData };
+module.exports = { KrakenfetchAPIData };
 
 

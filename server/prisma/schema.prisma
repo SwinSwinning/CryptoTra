@@ -27,3 +27,14 @@ model Candle {
   @@unique([timestamp, ticker])
 
 }
+
+model GainersLosers {
+  id    Int    @id @default(autoincrement())
+  timestamp Int
+  ticker String 
+  name String  
+  price Float
+  volume Float
+
+
+}
