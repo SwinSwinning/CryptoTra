@@ -7,6 +7,7 @@
       "name": "Debug Server",
       "program": "${workspaceFolder}/server/index.js",
       "runtimeArgs": ["--inspect"],
+      "cwd": "${workspaceFolder}/server",
       "skipFiles": ["<node_internals>/**"]
     }
   ]

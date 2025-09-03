@@ -9,6 +9,8 @@ function App() {
   const [loading, setLoading] = useState(false)
   const [allRecords, setAllRecords] = useState([]);
   const [currentRecords, setCurrentRecords] = useState([]);
+  const [topGainers, setTopGainers] = useState([]);
+  const [topLosers, setTopLosers] = useState([]);
   // const [error, setError] = useState(null); // State to hold error messages
   const [showDropdown, setShowDropdown] = useState(false);
   const [uniqueNames, setUniqueNames] = useState([]);
@@ -35,19 +37,47 @@ function App() {
   }, []);
 
 
+const updateTrending = async () => {
+    try {
+      setLoading(true)
+      const res = await fetch(`http://localhost:8080/upd`); // retrieve new records calling the Kraken API
+      const data = await res.json();
+      console.log("Data: ", data)
+      if (!data.success) {
+     
+        toast.error(data.msg || "Failed to download trending records");
+        console.log(data.msg)
+      }
+          // gainers losers here
+      setTopGainers(data.records.gainers || [])
+      setTopLosers(data.records.losers || [])
+
+        toast.success("Trending Updated");
+
+    } catch (err) {
+      console.error("Trend Update failed:", err);
+      toast.error("Network or server error while fetching records");
+
+    } finally {
+      setLoading(false)
+    }
+}
+
   const fetchRecords = async () => {
     try {
       setLoading(true)
       const res = await fetch(`http://localhost:8080/ret`); // retrieve new records calling the Kraken API
       const data = await res.json();
-
+      console.log("Data: ", data)
       if (!data.success) {
         // setError(data.msg);
         toast.error(data.msg || "Failed to download new records");
         console.log(data.msg)
       }
 
-        const rawRecords = Object.values(data.records)
+
+        const rawRecords = Object.values(data.records.all)
+
         //console.log(rawRecords)
         SetStates(rawRecords)
         toast.success("Records retrieved successfully");
@@ -146,6 +176,7 @@ function App() {
       <header className="text-center bg-gray-100 p-3">
         <h1 className="text-indigo-500 mb-5">Crypto Tracker</h1>
         <div className="flex gap-4">
+          <button onClick={() => updateTrending()} className='flex-1'>Update Trending</button>
           <button onClick={() => fetchRecords()} className='flex-1'>Retrieve Records</button>
 
           <button onClick={deleteRecords} className='flex-1'>Delete</button>
@@ -158,6 +189,23 @@ function App() {
         hideProgressBar={true}
 
       />
+
+    <div className="grid grid-cols-2 gap-4">
+      {topGainers.map((gainer) => (
+        <div 
+          key={gainer.id} 
+          className="p-4 rounded-xl shadow bg-white"
+        >
+          <h3 className="font-bold text-lg">{gainer.ticker.name}</h3>
+          <p className="text-gray-700">Krakenprice {gainer.ticker.krakenCandle[0].price.toFixed(2)}</p>
+          <p className="text-gray-700">CMC Price {gainer.price.toFixed(2)}</p>
+          <p className="text-gray-700">1h Change: {gainer.p1h_change.toFixed(2)}%</p>
+          <p className="text-gray-700">24h Change: {gainer.p24h_change.toFixed(2)}%</p>          
+          <p className="text-gray-700">24h kraken Change: {gainer.ticker.krakenCandle[0].last288change.toFixed(2)}%</p>
+          <p className="text-gray-700">RSI {gainer.ticker.krakenCandle[0].rsi14.toFixed(2)}</p>
+        </div>
+      ))}
+    </div>
 
       <div className="w-full flex-grow">
         <table className="w-full divide-y-2 divide-gray-200 table-fixed">

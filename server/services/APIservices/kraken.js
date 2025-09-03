@@ -1,11 +1,12 @@
 const axios = require('axios');
 
-const url = "https://api.kraken.com/0/public/OHLC"
+
 
 const KrakenfetchAPIData = async (pair) => {
+    const url = "https://api.kraken.com/0/public/OHLC"
     const parameters = {
         interval: 5,
-        pair: pair,
+        pair: pair
 
     };
     try {
@@ -15,7 +16,23 @@ const KrakenfetchAPIData = async (pair) => {
 
         return response
     } catch (error) {
-        throw new Error("Failed retrieve data from API " + error.message);
+        throw new Error("Failed Fetch Candle data from Kraken API " + error.message);
+    }
+}
+
+const KrakenGetAssets = async () => {
+    const url = "https://api.kraken.com/0/public/Assets"
+    const parameters = {   
+
+    };
+    try {
+        const response = await axios.get(url, {
+            params: parameters
+        });
+
+        return response
+    } catch (error) {
+        throw new Error("Failed Get Assets data from Kraken API " + error.message);
     }
 }
 
@@ -36,6 +53,6 @@ const KrakenfetchAPIData = async (pair) => {
 //     }
 // }
 
-module.exports = { KrakenfetchAPIData };
+module.exports = { KrakenfetchAPIData, KrakenGetAssets };
 
 

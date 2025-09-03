@@ -7,7 +7,35 @@ datasource db {
   url      = "file:./dev.db"
 }
 
-model Candle {
+
+model CmcLatest {  
+  id          Int     @id @default(autoincrement()) 
+  cmcid       Int
+  price       Float
+  p1h_change  Float
+  p24h_change Float
+  p7d_change  Float
+  p30d_change Float
+
+  ticker      Ticker  @relation(fields: [cmcid], references: [cmcid])
+  
+
+}
+
+model Ticker {  
+  cmcid       Int         @id
+  name        String
+  cmcticker   String @unique
+  krakenticker String @unique
+
+  cmcLatests  CmcLatest[]  // one-to-many relation
+  krakenCandle KrakenCandle[] @relation("TickerToKraken")
+  
+}
+
+
+
+model KrakenCandle {
   id    Int    @id @default(autoincrement())
   timestamp Int
   ticker String 
@@ -24,17 +52,9 @@ model Candle {
   last288change Float
   trigger Boolean
 
+  tickerRel Ticker? @relation("TickerToKraken", fields: [ticker], references: [krakenticker])
   @@unique([timestamp, ticker])
 
-}
-
-model GainersLosers {
-  id    Int    @id @default(autoincrement())
-  timestamp Int
-  ticker String 
-  name String  
-  price Float
-  volume Float
-
+  
 
 }

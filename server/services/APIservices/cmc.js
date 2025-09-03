@@ -1,40 +1,38 @@
 const axios = require('axios');
-require('dotenv').config(); 
+require('dotenv').config();
 
-const environment = process.env.NODE_ENV || 'test';
-
-// Define configurations for test and production
-const config = {
-    test: {
-        url: 'https://sandbox-api.coinmarketcap.com/v2/cryptocurrency/quotes/latest',
-        apiKey: process.env.TEST_API_KEY
-    },
-    prod: {
-        url: 'https://pro-api.coinmarketcap.com/v2/cryptocurrency/quotes/latest',
-        apiKey: process.env.PROD_API_KEY
-    }
+const environments = {
+  test: {
+    baseUrl: 'https://sandbox-api.coinmarketcap.com/',
+    apiKey: process.env.TEST_API_KEY
+  },
+  prod: {
+    baseUrl: 'https://pro-api.coinmarketcap.com/',
+    apiKey: process.env.PROD_API_KEY
+  }
 };
 
-// Use the appropriate configuration
-const { url, apiKey } = config[environment];
-const UCIDs = '1,2,52' //,74,328,512,1027,1765,1831,1839,1958,1975,2010,2280,3513,3773,4030,4642,5426,5805,5994,6210,6538,6636,7080' +
-            // ',7083,7278,8425,11840,11841,13502,13855,20947,21794,22861,23095,24478,25028,28782,30171,33788,34466,' +
-            // '18876,3794,2011,24911,1765,11419,8000,28324,5007,29814,2416,6758,32698,8916,14806,9481,4157,1437,29210,4944,' +
-            //  '28850,1518,28321,6783,3964,1966,4066,4558,28541,32195,18069,28301,6719,32461,29587,5034,5692,23121,' +
-            //   '5864,8104,2586,3945,5964,2469,20314,7653,5117,2130,28846,3783,4846,7501,7150,1934,28674,28299,9444,5728'
+// fallback = test if NODE_ENV not set
+const environment = process.env.NODE_ENV || 'test';
+const config = environments[environment];
+//console.log(config)
+if (!config.apiKey) {
+  throw new Error(`API key not set for environment: ${environment}`);
+}
+
+
+ const CMCfetchAPIData = async (UCIDs) => {
 
 const parameters = {
-id :  UCIDs,
-convert_id: 825
+id : UCIDs.join(',')
 };
-
-
-
- const CMCfetchAPIData = async () => {
+//console.log(parameters)
+    const urlPath = 'v2/cryptocurrency/quotes/latest';
+    const url = config.baseUrl + urlPath;
     try {
         const response = await axios.get(url, {
             headers: {
-                'X-CMC_PRO_API_KEY': apiKey
+                'X-CMC_PRO_API_KEY': config.apiKey
             },
             params: parameters
         });             
@@ -46,11 +44,20 @@ convert_id: 825
         }
 }
 
- const CMCGainersLosers = async () => {
+ const CMCGainersLosers = async (string) => {     
+    const urlpath ='v1/cryptocurrency/listings/latest';
+    const url = config.baseUrl + urlpath;
+    console.log(url)
+    const parameters = {
+                limit :  200,
+                sort : 'percent_change_1h',
+                sort_dir : string,
+
+};
     try {
-        const response = await axios.get('https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest?limit=200', {
+        const response = await axios.get(url, {
             headers: {
-                'X-CMC_PRO_API_KEY': apiKey
+                'X-CMC_PRO_API_KEY': config.apiKey 
             },
             params: parameters
         });        
@@ -62,22 +69,7 @@ convert_id: 825
         }
 }
 
-// const KrakenfetchAPIData = async (pair) => {
-//     const parameters = {
-//         interval: 5,
-//         pair: pair,
 
-//     };
-//     try {
-//         const response = await axios.get(url, {
-//             params: parameters
-//         });
-
-//         return response
-//     } catch (error) {
-//         throw new Error("Failed retrieve data from API " + error.message);
-//     }
-// }
 
 
 module.exports = { CMCfetchAPIData, CMCGainersLosers};

@@ -54,7 +54,7 @@ const PreprocessPairResponseData = (response) => {
 
 
     return {
-      ticker: response.ticker, data: enrichedArray, triggerobj: latestTriggerResult
+      ticker: response.ticker, tickername: response.name, data: enrichedArray, triggerobj: latestTriggerResult
     }
   } catch (error) {
     console.error('Failed to process data:', error);
@@ -231,9 +231,7 @@ function sendNotification(candle, ticker, conditions) {
 }
 
 
-function CompareCMCKRaken() {
-  const cmc = require('./cmc.json');
-  const kraken = require('./kraken.json');
+function CrossCheckTickers(cmc, kraken) {
 
   const symbolMap = {   // add here any other symbols that differ between CMC and Kraken
     BTC: "XBT",
@@ -244,43 +242,48 @@ function CompareCMCKRaken() {
 
 
   const result = [];
-  const notfound = []
+
 
   // Build lookup from Kraken by altname
   const krakenSymbols = new Set();
-  for (const [key, val] of Object.entries(kraken.result)) {
+  for (const [key, val] of Object.entries(kraken)) {
     krakenSymbols.add(key);
     krakenSymbols.add(val.altname);
   }
 
-  // Walk through CMC symbols
-  for (const coin of cmc.data) {
-    const cmcSym = coin.symbol;
-    const mappedSym = symbolMap[cmcSym] || cmcSym;
+  for (kraksym of krakenSymbols) {
 
-    if (krakenSymbols.has(mappedSym)) {
-      const usd = coin.quote?.USD;
+    for (const coin of cmc.data) {
+      const cmcSym = coin.symbol;
+      const mappedSym = symbolMap[cmcSym] || cmcSym;
+      if (kraksym === mappedSym) {
+        const usd = coin.quote?.USD;
 
-      result.push({
-        symbol: cmcSym,
-        name: coin.name,
-        price: usd?.price ?? null,
-        percent_change_1h: usd?.percent_change_1h ?? null,
-        percent_change_24h: usd?.percent_change_24h ?? null,
-        percent_change_7d: usd?.percent_change_7d ?? null,
-        percent_change_30d: usd?.percent_change_30d ?? null
-      });
+        result.push({
+          cmcid: coin.id,
+          symbol: cmcSym,
+          name: coin.name,
+          price: usd?.price ?? null,
+          percent_change_1h: usd?.percent_change_1h ?? null,
+          percent_change_24h: usd?.percent_change_24h ?? null,
+          percent_change_7d: usd?.percent_change_7d ?? null,
+          percent_change_30d: usd?.percent_change_30d ?? null
+        });
+        break;
+
+      }
+
+
     }
-    else {
-      notfound.push(coin.symbol)
-    }
+
+
   }
 
-  return result;
+  return [result, symbolMap];
 }
 
 
 
 module.exports = {
-  PreprocessPairResponseData, CompareCMCKRaken, sendNotification
+  PreprocessPairResponseData, CrossCheckTickers, sendNotification
 };

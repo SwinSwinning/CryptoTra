@@ -1,7 +1,8 @@
 require('dotenv').config()
-const {  HandleRet, DeleteAllRecords, GetRecords} = require('./services/syncservice');
-const { CMCfetchAPIData, CMCGainersLosers } = require('./services/APIservices/cmc');
-const { CompareCMCKRaken } = require('./services/synchelpers');
+const {  UpdateGainersLosers, HandleRet, DeleteAllRecords, GetRecords, FetchAvailableTickers} = require('./services/syncservice');
+
+// const { CMCfetchAPIData, CMCGainersLosers } = require('./services/APIservices/cmc');
+// const { MergeAPICandleData } = require('./services/synchelpers');
 
 
 
@@ -47,14 +48,27 @@ app.get('/ret', async (req, res) => {
 
   try {
     const result = await HandleRet(); 
-    return res.json({ success: true, records: result });
+    //console.log("Hello", result.gainers[0])
+    return res.json({ success: true, records: result  });
+
   } catch (error) {
     console.log('Error in /ret route:' + error.message);
     return res.status(500).json({ success: false, msg: error.message });
   }
 });
 
+app.get('/upd', async (req, res) => {
+  try {
+    const result = await UpdateGainersLosers(); 
+    console.log("Hello", result)
+    return res.json({ success: true, records: result  });
 
+  } catch (error) {
+    console.log('Error in /ret route:' + error.message);
+    return res.status(500).json({ success: false, msg: error.message });
+  }
+
+});
 
 app.get('/getrecords', async (req, res) => {
   const ticker = req.query.ticker; // Get ticker from the query parameter 
@@ -76,21 +90,22 @@ app.get('/getrecords', async (req, res) => {
 }
 );
 
-app.get('/mer', (req, res) => {
+app.get('/tic', async (req, res) => {
 
   try {
-    const result = CompareCMCKRaken();
-    console.log(result)
+    const result = await FetchAvailableTickers();
+
+    return res.json({ success: true, records: result });
   } catch (error) {
-    console.log('Error in merge route:' + error.message);
+    console.log('Error in tic route:' + error.message);
     return res.status(500).json({ success: false, msg: error.message });
   }
 });
 
-app.get('/cmc', async (req, res) => {
+app.get('/mer', async (req, res) => {
 
   try {
-    const result = await CMCGainersLosers();
+    const result = await MergeAPIData();
     return res.json({ success: true, records: result });
   } catch (error) {
     console.log('Error in /cmc route:' + error.message);
