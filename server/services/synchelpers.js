@@ -54,7 +54,7 @@ const PreprocessPairResponseData = (response) => {
 
 
     return {
-      ticker: response.ticker, tickername: response.name, data: enrichedArray, triggerobj: latestTriggerResult
+      ticker: response.ticker, data: enrichedArray, triggerobj: latestTriggerResult
     }
   } catch (error) {
     console.error('Failed to process data:', error);
@@ -238,11 +238,13 @@ function CrossCheckTickers(cmc, kraken) {
     DOGE: "XDG",
     FRAX: "FXS",
     AXL: "WAXL",
+    $MICHI: "MICHI"
+
+
   };
 
 
   const result = [];
-
 
   // Build lookup from Kraken by altname
   const krakenSymbols = new Set();
@@ -257,28 +259,15 @@ function CrossCheckTickers(cmc, kraken) {
       const cmcSym = coin.symbol;
       const mappedSym = symbolMap[cmcSym] || cmcSym;
       if (kraksym === mappedSym) {
-        const usd = coin.quote?.USD;
-
         result.push({
           cmcid: coin.id,
           symbol: cmcSym,
-          name: coin.name,
-          price: usd?.price ?? null,
-          percent_change_1h: usd?.percent_change_1h ?? null,
-          percent_change_24h: usd?.percent_change_24h ?? null,
-          percent_change_7d: usd?.percent_change_7d ?? null,
-          percent_change_30d: usd?.percent_change_30d ?? null
+          name: coin.name
         });
         break;
-
       }
-
-
     }
-
-
   }
-
   return [result, symbolMap];
 }
 

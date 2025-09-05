@@ -8,38 +8,37 @@ datasource db {
 }
 
 
+model Ticker { 
+  id          Int       @id @default(autoincrement()) 
+  cmcId       Int         @unique
+  name        String
+  cmcticker   String?
+  krakenticker String? 
+
+  cmcLatests  CmcLatest[]  // one-to-many relation
+  krakenCandle KrakenCandle[] // one-to-many relation
+  
+}
+
 model CmcLatest {  
   id          Int     @id @default(autoincrement()) 
-  cmcid       Int
+  cmcId    Int
   price       Float
   p1h_change  Float
   p24h_change Float
   p7d_change  Float
   p30d_change Float
 
-  ticker      Ticker  @relation(fields: [cmcid], references: [cmcid])
-  
+  gainers Gainers[] // one-to-many relation
 
+  ticker      Ticker  @relation(fields: [cmcId], references: [cmcId], onDelete: Cascade)
+ 
 }
-
-model Ticker {  
-  cmcid       Int         @id
-  name        String
-  cmcticker   String @unique
-  krakenticker String @unique
-
-  cmcLatests  CmcLatest[]  // one-to-many relation
-  krakenCandle KrakenCandle[] @relation("TickerToKraken")
-  
-}
-
-
 
 model KrakenCandle {
   id    Int    @id @default(autoincrement())
   timestamp Int
-  ticker String 
-  name String  
+  tickerId Int  
   price Float
   volume Float
   ema21 Float
@@ -52,9 +51,21 @@ model KrakenCandle {
   last288change Float
   trigger Boolean
 
-  tickerRel Ticker? @relation("TickerToKraken", fields: [ticker], references: [krakenticker])
-  @@unique([timestamp, ticker])
+  tickerRel Ticker @relation(fields: [tickerId], references: [id], onDelete: Cascade)
+  @@unique([timestamp, tickerId])
 
-  
+}
 
+model Gainers { 
+  id          Int       @id @default(autoincrement()) 
+  cmcId       Int
+  candleId    Int @unique
+
+
+   cmcLatests  CmcLatest  @relation(fields: [candleId], references: [id], onDelete: Cascade)
+}
+
+model Losers { 
+  id          Int       @id @default(autoincrement()) 
+  cmcId       Int
 }

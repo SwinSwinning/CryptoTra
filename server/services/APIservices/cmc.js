@@ -44,7 +44,7 @@ id : UCIDs.join(',')
         }
 }
 
- const CMCGainersLosers = async (string) => {     
+ const CMCGainersLosers = async (string) => {   
     const urlpath ='v1/cryptocurrency/listings/latest';
     const url = config.baseUrl + urlpath;
     console.log(url)

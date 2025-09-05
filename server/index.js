@@ -1,5 +1,6 @@
 require('dotenv').config()
 const {  UpdateGainersLosers, HandleRet, DeleteAllRecords, GetRecords, FetchAvailableTickers} = require('./services/syncservice');
+const { SaveKrakenToDB, DeleteAllfromDB, GetCandlesDB, SaveTickerDB, GetTickersDB, SaveLatestCMCDB, GetTopDB, SaveTopDB } = require('./services/dbservices');
 
 // const { CMCfetchAPIData, CMCGainersLosers } = require('./services/APIservices/cmc');
 // const { MergeAPICandleData } = require('./services/synchelpers');
@@ -48,7 +49,7 @@ app.get('/ret', async (req, res) => {
 
   try {
     const result = await HandleRet(); 
-    //console.log("Hello", result.gainers[0])
+
     return res.json({ success: true, records: result  });
 
   } catch (error) {
@@ -57,14 +58,14 @@ app.get('/ret', async (req, res) => {
   }
 });
 
-app.get('/upd', async (req, res) => {
+// This is run ever 30 minutes or hour  3 credits 
+app.get('/upd', async (req, res) => {  
   try {
-    const result = await UpdateGainersLosers(); 
-    console.log("Hello", result)
-    return res.json({ success: true, records: result  });
+    const result = await UpdateGainersLosers();  
+    return res.json({ success: true, records: result[0], toprecords: result[1]  });
 
   } catch (error) {
-    console.log('Error in /ret route:' + error.message);
+    console.log('Error in /upd route:' + error.message);
     return res.status(500).json({ success: false, msg: error.message });
   }
 
@@ -72,16 +73,14 @@ app.get('/upd', async (req, res) => {
 
 app.get('/getrecords', async (req, res) => {
   const ticker = req.query.ticker; // Get ticker from the query parameter 
-
-
   try {    
-    if (ticker) { // If there is a ticker, filter the records based on ticker..
-      const data = await GetRecords(ticker);
-      res.json({ success: true, data })
+    let data = null
+        if (ticker) { // If there is a ticker, filter the records based on ticker..
+       data = await GetRecords(ticker);      
     } else { // .. otherwise get all the records
-      const data = await GetRecords();    
-      res.json({ success: true, data })
-    }
+       data = await GetRecords();    
+    }    
+     res.json({ success: true, data })
   } catch (error) {
     console.log('Error in /getrecords route:' + error.message);
     return res.status(500).json({ success: false, msg: error.message });
@@ -90,11 +89,11 @@ app.get('/getrecords', async (req, res) => {
 }
 );
 
+ // this is run once ever week or so   1 credit
 app.get('/tic', async (req, res) => {
 
   try {
     const result = await FetchAvailableTickers();
-
     return res.json({ success: true, records: result });
   } catch (error) {
     console.log('Error in tic route:' + error.message);
@@ -102,13 +101,14 @@ app.get('/tic', async (req, res) => {
   }
 });
 
-app.get('/mer', async (req, res) => {
+app.get('/test', async (req, res) => {
 
   try {
-    const result = await MergeAPIData();
-    return res.json({ success: true, records: result });
+    
+    const toprecords = await GetTopDB("gainers"); // get highest gainers from cmc latest
+    return res.json({ success: true, records: toprecords });
   } catch (error) {
-    console.log('Error in /cmc route:' + error.message);
+    console.log('Error in /test route:' + error.message);
     return res.status(500).json({ success: false, msg: error.message });
   }
 });
