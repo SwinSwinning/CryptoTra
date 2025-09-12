@@ -523,7 +523,7 @@
             "decimals": 10,
             "display_decimals": 5,
             "status": "enabled",
-            "margin_rate": "0.02"
+            "margin_rate": "0.03"
         },
         "BDXN": {
             "aclass": "currency",
@@ -560,6 +560,14 @@
             "altname": "BIGTIME",
             "decimals": 5,
             "display_decimals": 3,
+            "status": "enabled",
+            "margin_rate": "0"
+        },
+        "BILLY": {
+            "aclass": "currency",
+            "altname": "BILLY",
+            "decimals": 3,
+            "display_decimals": 1,
             "status": "enabled",
             "margin_rate": "0"
         },
@@ -2355,6 +2363,14 @@
             "display_decimals": 5,
             "status": "enabled"
         },
+        "MIRROR": {
+            "aclass": "currency",
+            "altname": "MIRROR",
+            "decimals": 5,
+            "display_decimals": 3,
+            "status": "enabled",
+            "margin_rate": "0"
+        },
         "MKR": {
             "aclass": "currency",
             "altname": "MKR",
@@ -2640,6 +2656,14 @@
             "status": "enabled",
             "margin_rate": "0.02"
         },
+        "OPEN": {
+            "aclass": "currency",
+            "altname": "OPEN",
+            "decimals": 5,
+            "display_decimals": 3,
+            "status": "enabled",
+            "margin_rate": "0"
+        },
         "ORCA": {
             "aclass": "currency",
             "altname": "ORCA",
@@ -2900,6 +2924,14 @@
             "decimals": 10,
             "display_decimals": 5,
             "status": "enabled"
+        },
+        "PTB": {
+            "aclass": "currency",
+            "altname": "PTB",
+            "decimals": 4,
+            "display_decimals": 2,
+            "status": "enabled",
+            "margin_rate": "0"
         },
         "PUFFER": {
             "aclass": "currency",
@@ -3193,6 +3225,14 @@
             "status": "enabled",
             "margin_rate": "0"
         },
+        "SAROS": {
+            "aclass": "currency",
+            "altname": "SAROS",
+            "decimals": 5,
+            "display_decimals": 3,
+            "status": "enabled",
+            "margin_rate": "0"
+        },
         "SBR": {
             "aclass": "currency",
             "altname": "SBR",
@@ -3316,7 +3356,7 @@
             "display_decimals": 5,
             "collateral_value": 0.925,
             "status": "enabled",
-            "margin_rate": "0.02"
+            "margin_rate": "0.022"
         },
         "SOL.S": {
             "aclass": "currency",
@@ -3737,6 +3777,14 @@
             "display_decimals": 5,
             "status": "enabled"
         },
+        "U": {
+            "aclass": "currency",
+            "altname": "U",
+            "decimals": 4,
+            "display_decimals": 2,
+            "status": "enabled",
+            "margin_rate": "0"
+        },
         "UFD": {
             "aclass": "currency",
             "altname": "UFD",
@@ -4044,11 +4092,26 @@
             "status": "enabled",
             "margin_rate": "0"
         },
+        "WMTX": {
+            "aclass": "currency",
+            "altname": "WMTX",
+            "decimals": 5,
+            "display_decimals": 3,
+            "status": "enabled",
+            "margin_rate": "0"
+        },
         "WOO": {
             "aclass": "currency",
             "altname": "WOO",
             "decimals": 10,
             "display_decimals": 5,
+            "status": "enabled"
+        },
+        "WSOL": {
+            "aclass": "currency",
+            "altname": "WSOL",
+            "decimals": 8,
+            "display_decimals": 6,
             "status": "enabled"
         },
         "XBT.M": {
@@ -4277,7 +4340,7 @@
             "display_decimals": 2,
             "collateral_value": 1.0,
             "status": "enabled",
-            "margin_rate": "0.04"
+            "margin_rate": "0.026"
         },
         "ZEUS": {
             "aclass": "currency",
@@ -4303,6 +4366,14 @@
             "collateral_value": 1.0,
             "status": "enabled",
             "margin_rate": "0.02"
+        },
+        "ZIG": {
+            "aclass": "currency",
+            "altname": "ZIG",
+            "decimals": 5,
+            "display_decimals": 3,
+            "status": "enabled",
+            "margin_rate": "0"
         },
         "ZJPY": {
             "aclass": "currency",
@@ -4359,7 +4430,7 @@
             "display_decimals": 2,
             "collateral_value": 1.0,
             "status": "enabled",
-            "margin_rate": "0.025"
+            "margin_rate": "0.05"
         }
     }
 }

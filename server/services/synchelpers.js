@@ -10,8 +10,10 @@ const PreprocessPairResponseData = (response) => {
   // Specify the CandleData to use for calculation of indicators
   try {
     const ohlcvdata = Object.values(response.data.data.result)[0]
+
     const numCandlesForCalc = 700 // Specify the number of candles to use for calculating the indicators
-    const arrtoassign = ohlcvdata.slice(ohlcvdata.length - numCandlesForCalc, ohlcvdata.length);
+    const openSlice = Math.max(ohlcvdata.length - numCandlesForCalc,0)   // take at least 0 as the openslice. This prevents a negative number from being used as the open slice
+    const arrtoassign = ohlcvdata.slice(openSlice, ohlcvdata.length);
 
     // Assign key value pair for timestamp, low, close, volume
     const candleArray = []
@@ -36,25 +38,36 @@ const PreprocessPairResponseData = (response) => {
 
 
     const enrichedArray = []
-    let latestTriggerResult = {}
-    const numOfCandles = 20
-    for (let i = 0; i < numOfCandles; i++) { // enrich and add to database only the last 20 candles
+    // let latestTriggerResult = {}
+    const numOfCandles = Math.min(candleTa.length,5) // take 5 or the candleta length if there are less than 20 historical candles
+    for (let i = 0; i < numOfCandles; i++) { // enrich and add to database these specified number of candles
 
-      const latestCandle = EnrichCurrentCandle(candleTa.slice(0, candleTa.length - i)); // enrich (add last change percentages ) the candles
-      const prevCandle = candleTa[candleTa.length - 2 - i];
+      const latestCandle = EnrichCurrentCandle(candleTa.slice(0, candleTa.length - i)); // enrich (add last change percentages ) to the latest candle ( Take sliced candlearray as input)
+  
+      // if (numOfCandles > 1) {
+      // const prevCandle = candleTa[candleTa.length - 2 - i];
 
-      const triggerResult = CheckTrigger(latestCandle, prevCandle);
-      latestCandle.trigger = triggerResult.uptrend.triggered || triggerResult.downtrend.triggered; // Add a triggered property to the latest candle
+
+      // const triggerResult = CheckTrigger(latestCandle, prevCandle);
+      // latestCandle.trigger = triggerResult.uptrend.triggered || triggerResult.downtrend.triggered; // Add a triggered property to the latest candle
+      // if (i === 0) {    // Set the latesttriggerresult for hte most recent candle to prevent multiple notifications from being sent out.
+      //   latestTriggerResult = triggerResult
+      // }
+      // }
+      // else {
+      //   console.log("not enough Candle Data to check previous candle for trigger")
+      //   latestTriggerResult = null
+      //   latestCandle.trigger=false
+      // }
+
       enrichedArray.push(latestCandle)
 
-      if (i === 0) {    // Set the latesttriggerresult for hte most recent candle to prevent multiple notifications from being sent out.
-        latestTriggerResult = triggerResult
-      }
+
     }
 
 
     return {
-      ticker: response.ticker, data: enrichedArray, triggerobj: latestTriggerResult
+      ticker: response.ticker, data: enrichedArray
     }
   } catch (error) {
     console.error('Failed to process data:', error);
@@ -87,7 +100,7 @@ function Assign(candle) {
 
 function EnrichCurrentCandle(arr) {
   const currentCandle = arr[arr.length - 1];
-  const periods = [1, 77, 144, 288];
+  const periods = [2, 6, 144, 288];
   periods.forEach((p) => {
 
     if (arr.length > p) { // Check if the candleArray is bigger than the lookback period
@@ -146,8 +159,107 @@ function createAvgVolumeCalculator(length = 100) {
   };
 }
 
+function CheckTrigger(coin, minConditions = 2) {
+  const candle = coin.ticker.krakenCandle[0]
 
-function CheckTrigger(candle, prevCandle, minConditions = 2) {
+  const minAvgVol = candle.last100volavg > 5000
+  const aboveAvgVolume = candle.volume > candle.last100volavg * 0.7; // Check if the current volume is above 70% of the average volume
+
+  // ===== Uptrend Signals =====
+  const uptrend = {
+    aboveAvgVolume,
+    closeAboveEMA200: candle.close > candle.ema200,
+    ema50Above200: candle.ema50 > candle.ema200,
+    rsi50to70Up: candle.rsi14 >= 50 && candle.rsi14 <= 70 
+
+  };
+
+  // ===== Downtrend Signals =====
+  const downtrend = {
+    aboveAvgVolume,
+    closeBelowEMA200: candle.close < candle.ema200,
+    ema50Below200: candle.ema50 < candle.ema200,
+    rsi30to50Down: candle.rsi14 <= 50 && candle.rsi14 >= 30
+
+  };
+
+   // ===== PriceSpike UP Signals =====
+   const pricespike = coin.p1h_change > 5 
+   const pricerising = (coin.p1h_change > 0) && (coin.p1h_change < coin.p24h_change && coin.p24h_change < coin.p7d_change) 
+   const priceincrease = coin.p1h_change > 2 && coin.p24h_change > coin.p1h_change
+   const lastchange = candle.last1change > 2
+
+
+  // Helper to format results
+  const formatResults = (name, signals) => {
+    const otherConditions = Object.entries(signals)
+      .filter(([key]) => key !== "aboveAvgVolume")
+      .map(([key, value]) => ({ condition: key, passed: value }));
+
+    const passedCount = otherConditions.filter(c => c.passed).length;
+
+    const triggered = signals.aboveAvgVolume && (passedCount >= minConditions);
+    return {
+      name,
+      triggered,
+      conditions: [
+        { condition: "aboveAvgVolume", passed: signals.aboveAvgVolume },
+        ...otherConditions
+      ]
+    };
+  };
+
+  return {coin: coin, trigger: minAvgVol && (pricerising || pricespike || priceincrease || lastchange)}
+
+  return {
+    uptrend: formatResults("Uptrend", uptrend),
+    downtrend: formatResults("Downtrend", downtrend)
+  };
+
+}
+
+function sendNotification(coin, string) {  // {coinname, Boolean trigger}
+
+  const pctEmoji = (v) => {
+    const num = Number(v);
+    return num >= 0
+      ? `📈 ${num.toFixed(2)}%`
+      : `📉 ${num.toFixed(2)}%`;
+  };
+
+
+
+let message = `${string} last period: \n` 
+    for(const c of coin) {
+      const coinname = c.ticker.name.replaceAll(" ", "-")
+    //message += `<a href="https://www.tradingview.com/chart/jqlM94AL/?symbol=KRAKEN%3A${c.ticker.cmcticker}">${c.ticker.name}</a> -- ${pctEmoji(c.p1h_change)}\n`;
+    message += `<a href="https://coinmarketcap.com/currencies/${coinname}">${c.ticker.name} (${c.ticker.krakenticker})</a> -- ${pctEmoji(c.p1h_change)}\n` +
+    `last 2 change ----: ${pctEmoji(c.ticker.krakenCandle[0].last2change)}\n` +
+    `30m Change ----------: ${pctEmoji(c.ticker.krakenCandle[0].last6change)}\n` +
+        `Last 24h Change ----------: ${pctEmoji(c.p24h_change)}\n` +
+    `Volume : Avg----------: ${c.ticker.krakenCandle[0].volume} : ${c.ticker.krakenCandle[0].last100volavg} \n   \n`  
+ 
+    }
+
+  // const message = `Coin: ${triggerResult.coin}\n` +
+  //   `Current Price: ${Number(candle.close).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}\n` +
+  //   `Last Change --------: ${pctEmoji(candle.last1change)}\n` +
+  //   
+  //   `12h Change ---------: ${pctEmoji(candle.last144change)}\n` +
+  //   `24h Change----------: ${pctEmoji(candle.last288change)}\n` +
+  //   `RSI-----------------------: ${candle.rsi14.toFixed(2)}\n` +
+  //   `EMA21----------------: ${Number(candle.ema21).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}\n` +
+  //   `EMA50----------------: ${Number(candle.ema50).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}\n` +
+  //   `EMA200---------------: ${Number(candle.ema200).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}\n` +
+  //   `\nConditions:\n${conditionsText}`;
+
+
+  console.log(message)
+
+  sendTelegramMessage(message);
+}
+
+function CheckTriggerold(candle, prevCandle, minConditions = 2) {
 
   const aboveAvgVolume = candle.volume > candle.last100volavg * 0.7; // Check if the current volume is above 70% of the average volume
   if (!prevCandle) {
@@ -192,6 +304,8 @@ function CheckTrigger(candle, prevCandle, minConditions = 2) {
     };
   };
 
+  return 
+
   return {
     uptrend: formatResults("Uptrend", uptrend),
     downtrend: formatResults("Downtrend", downtrend)
@@ -199,7 +313,7 @@ function CheckTrigger(candle, prevCandle, minConditions = 2) {
 
 }
 
-function sendNotification(candle, ticker, conditions) {
+function sendNotificationold(candle, ticker, conditions) {
 
   const pctEmoji = (v) => {
     const num = Number(v);
@@ -215,7 +329,7 @@ function sendNotification(candle, ticker, conditions) {
   const message = `Coin: ${ticker}\n` +
     `Current Price: ${Number(candle.close).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}\n` +
     `Last Change --------: ${pctEmoji(candle.last1change)}\n` +
-    `6h Change ----------: ${pctEmoji(candle.last77change)}\n` +
+    `6h Change ----------: ${pctEmoji(candle.last6change)}\n` +
     `12h Change ---------: ${pctEmoji(candle.last144change)}\n` +
     `24h Change----------: ${pctEmoji(candle.last288change)}\n` +
     `RSI-----------------------: ${candle.rsi14.toFixed(2)}\n` +
@@ -238,7 +352,8 @@ function CrossCheckTickers(cmc, kraken) {
     DOGE: "XDG",
     FRAX: "FXS",
     AXL: "WAXL",
-    $MICHI: "MICHI"
+    $MICHI: "MICHI",
+    $M:"M",
 
 
   };
@@ -248,7 +363,7 @@ function CrossCheckTickers(cmc, kraken) {
 
   // Build lookup from Kraken by altname
   const krakenSymbols = new Set();
-  for (const [key, val] of Object.entries(kraken)) {
+  for (const [key, val] of Object.entries(kraken.data.result)) {
     krakenSymbols.add(key);
     krakenSymbols.add(val.altname);
   }
@@ -274,5 +389,5 @@ function CrossCheckTickers(cmc, kraken) {
 
 
 module.exports = {
-  PreprocessPairResponseData, CrossCheckTickers, sendNotification
+  PreprocessPairResponseData, CrossCheckTickers, sendNotification, CheckTrigger
 };

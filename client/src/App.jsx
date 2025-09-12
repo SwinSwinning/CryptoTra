@@ -5,7 +5,8 @@ import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 import CandleTable from "./components/CandleTable";
-import TopGainers from './components/TopGainers';
+import TopCoinsElement from './components/TopCoinsElement';
+import CoinDetails from "./components/CoinDetails";
 
 
 function App() {
@@ -15,6 +16,7 @@ function App() {
   const [topGainers, setTopGainers] = useState([]);
   const [topLosers, setTopLosers] = useState([]);
   // const [error, setError] = useState(null); // State to hold error messages
+  const [selectedCoin, setSelectedCoin] = useState(null)
   const [showDropdown, setShowDropdown] = useState(false);
   const [uniqueNames, setUniqueNames] = useState([]);
 
@@ -25,10 +27,8 @@ function App() {
       try {
         const res = await fetch(`http://localhost:8080/getrecords`);
         const data = await res.json();
-   
-
-        const rawRecords = Object.values(data.data)
-        SetStates(rawRecords)
+           
+            SetStates(data.data)
 
       } catch (err) {
         console.error("Failed to fetch data:", err);
@@ -43,7 +43,7 @@ const updateAvailablePairs = async () => {
       setLoading(true)
       const res = await fetch(`http://localhost:8080/tic`); // retrieve new records calling the Kraken API
       const data = await res.json();
-      console.log("Data: ", data.records)
+     
       if (!data.success) {     
         toast.error(data.msg || "Failed to download available pairs");
         console.log(data.msg)
@@ -65,16 +65,15 @@ const updateTrending = async () => {
       setLoading(true)
       const res = await fetch(`http://localhost:8080/upd`); // retrieve new records calling the Kraken API
       const data = await res.json();
-      console.log("Data: ", data.records)
+  
+     
       if (!data.success) {
      
         toast.error(data.msg || "Failed to download trending records");
         console.log(data.msg)
       }
-          // gainers losers here
-      setTopGainers(data.toprecords)
-      //setTopLosers(data.records.losers || [])
-      SetStates(data.records)
+
+      SetStates(data.data)
 
         toast.success("Trending Updated");
 
@@ -160,11 +159,12 @@ const updateTrending = async () => {
   };
 
 
-  const SetStates = (rawRecords, tofilter = false) => {
+  const SetStates = (data, tofilter = false) => {
     const topRecordsPerTicker = {};
     const uniqueNamesSet = new Set();
+    console.log(data)
+    for (const rec of data.records) {
 
-    for (const rec of rawRecords) {
       uniqueNamesSet.add(rec.ticker);
 
       if (!topRecordsPerTicker[rec.ticker]) {
@@ -175,19 +175,21 @@ const updateTrending = async () => {
       const arr = topRecordsPerTicker[rec.ticker];
       arr.push(rec);
       arr.sort((a, b) => b.timestamp - a.timestamp); // newest first
-      if (arr.length > 5) arr.pop(); // keep only 5
+      if (arr.length > 10) arr.pop(); // keep only 10 max
     }
 
     // flatten all tickers into one array
     const limited = Object.values(topRecordsPerTicker).flat();
-
+    const topGrecords = Object.values(data.toprecords)
     // final sort across all tickers
     limited.sort((a, b) => b.timestamp - a.timestamp);
-
+    // sconsole.log(topGrecords)
     if (!tofilter) {
-      setAllRecords(rawRecords)
+      setTopGainers(topGrecords.slice(0, Math.min(3, topGrecords.length)))
+      //  setTopGainers(data.topLrecords)
+      setAllRecords(data.records)
       setUniqueNames([...uniqueNamesSet]);
-      setTotalRecordCount(rawRecords.length);
+      setTotalRecordCount(data.records.length);
     }
 
     setCurrentRecords(limited);
@@ -214,11 +216,20 @@ const updateTrending = async () => {
 
       />
 
+     {selectedCoin ? (
+        <CoinDetails coin={selectedCoin} onBack={() => setSelectedCoin(null)} />
+      ) : (<div>
+        <TopCoinsElement TopCoins={topGainers} string="Gainers" onSelect={setSelectedCoin} />
+        {/* <TopCoinsElement TopCoins={topLosers} string="Losers" /> */}
+        </div>
+        
+      )}
 
-<TopGainers topGainers={topGainers} />
-<CandleTable loading={loading} currentRecords={currentRecords} />
 
-      <div className='footer text-white flex items-center justify-center bg-indigo-500 min-h-20'>
+
+   {/* <CandleTable loading={loading} currentRecords={currentRecords} /> */}
+
+      <div className='footer text-white flex items-center justify-center bg-indigo-500 min-h-20 mt-auto'>
         <div className="flex items-center gap-20">
           <p>Link to Github</p>
           <img src={Logo} alt="Logo" className="h-15 w-15" />

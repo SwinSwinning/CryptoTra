@@ -70,9 +70,33 @@ id : UCIDs.join(',')
 }
 
 
+ const CMCMapAPI = async () => {   
+    const urlpath ='v1/cryptocurrency/map';
+    const url = config.baseUrl + urlpath;
+    console.log(url)
+    const parameters = {               
+                sort : "id"
+             
+
+};
+    try {
+        const response = await axios.get(url, {
+            headers: {
+                'X-CMC_PRO_API_KEY': config.apiKey 
+            },
+            params: parameters
+        });        
+
+         return response.data
+        } catch (error){
+    console.error('Error fetching Map data from CMC API:', error); 
+    throw new Error("Failed to fetch Map data from CMC API " + error.message); // Return an error object
+        }
+}
 
 
-module.exports = { CMCfetchAPIData, CMCGainersLosers};
+
+module.exports = { CMCfetchAPIData, CMCGainersLosers, CMCMapAPI};
 
 
 
