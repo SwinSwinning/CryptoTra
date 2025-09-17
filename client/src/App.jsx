@@ -4,7 +4,6 @@ import Logo from './assets/FCmFwG01currentColor.svg';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
-import CandleTable from "./components/CandleTable";
 import TopCoinsElement from './components/TopCoinsElement';
 import CoinDetails from "./components/CoinDetails";
 
@@ -12,15 +11,12 @@ import CoinDetails from "./components/CoinDetails";
 function App() {
   const [loading, setLoading] = useState(false)
   const [allRecords, setAllRecords] = useState([]);
-  const [currentRecords, setCurrentRecords] = useState([]);
+
   const [topGainers, setTopGainers] = useState([]);
   const [topLosers, setTopLosers] = useState([]);
-  // const [error, setError] = useState(null); // State to hold error messages
-  const [selectedCoin, setSelectedCoin] = useState(null)
-  const [showDropdown, setShowDropdown] = useState(false);
-  const [uniqueNames, setUniqueNames] = useState([]);
 
-  const [totalRecordCount, setTotalRecordCount] = useState(0);
+  const [selectedCoin, setSelectedCoin] = useState(null)
+
 
   useEffect(() => {  // Retrieve all records from DB on page load.
     async function fetchData() {
@@ -40,7 +36,7 @@ function App() {
 
   const updateAvailablePairs = async () => {
     try {
-      setLoading(true)
+      toast("Retrieving Tickers....")
       const res = await fetch(`http://localhost:8080/tic`); // retrieve new records calling the Kraken API
       const data = await res.json();
 
@@ -56,7 +52,7 @@ function App() {
       toast.error("Network or server error while fetching records");
 
     } finally {
-      setLoading(false)
+      
     }
   }
 
@@ -86,78 +82,6 @@ function App() {
     }
   }
 
-  const fetchRecords = async () => {
-    try {
-      setLoading(true)
-      const res = await fetch(`http://localhost:8080/ret`); // retrieve new records calling the Kraken API
-      const data = await res.json();
-      console.log("Data: ", data)
-      if (!data.success) {
-        // setError(data.msg);
-        toast.error(data.msg || "Failed to download new records");
-        console.log(data.msg)
-      }
-
-
-      const rawRecords = Object.values(data.records.all)
-
-      //console.log(rawRecords)
-      SetStates(rawRecords)
-      toast.success("Records retrieved successfully");
-
-    } catch (err) {
-      console.error("Fetch failed:", err);
-      toast.error("Network or server error while fetching records");
-
-    } finally {
-      setLoading(false)
-    }
-
-
-  };
-
-  const deleteRecords = async () => {
-    try {
-      const res = await fetch("http://localhost:8080/del");
-      const data = await res.json();
-
-
-      if (data.success) {
-        setAllRecords([]);
-        setCurrentRecords([])
-        setUniqueNames([]);
-        toast.success("Records deleted successfully");
-      }
-      else {
-        // setError(data.msg || "Failed to delete records");
-        toast.error(data.msg || "Failed to delete records");
-        console.log(data.msg)
-      }
-
-    } catch (error) {
-      console.log(" Error Frontend " + error.message);   // ****Is this catch block necessary?****
-      toast.error(data.msg || "Failed to delete records");
-    }
-
-  };
-
-  const toggleDropdown = () => {
-    setShowDropdown((prev) => !prev);
-  };
-
-  const handleSelect = (ticker) => {
-    setShowDropdown(false);
-    const tofilter = true
-    const filteredRecords = allRecords.filter(r => r.ticker === ticker);
-    SetStates(filteredRecords, tofilter);
-
-  }
-
-  const ClearFilter = () => {
-    setShowDropdown(false);
-    SetStates(allRecords)
-  };
-
 
   const SetStates = (data, tofilter = false) => {
 
@@ -179,23 +103,22 @@ function App() {
     }
 
     // flatten all tickers into one array
-    const limited = Object.values(topRecordsPerTicker).flat();
+  
     const topGrecords = Object.values(data.toprecords)
     const topLrecords = Object.values(data.botrecords)
     // final sort across all tickers
-    limited.sort((a, b) => b.timestamp - a.timestamp);
+ 
 
     // console.log(topGrecords)
     if (!tofilter) {
       setTopGainers(topGrecords.slice(0, Math.min(3, topGrecords.length)))
       setTopLosers(topLrecords.slice(0, Math.min(3, topLrecords.length)))
-
       setAllRecords(data.records)
-      setUniqueNames([...uniqueNamesSet]);
-      setTotalRecordCount(data.records.length);
+
+
     }
 
-    setCurrentRecords(limited);
+
 
 
   }
@@ -259,7 +182,6 @@ function App() {
 
 
 
-      {/* <CandleTable loading={loading} currentRecords={currentRecords} /> */}
 
       <div className='footer text-white flex items-center justify-center bg-indigo-500 min-h-20 mt-auto'>
         <div className="flex items-center gap-20">

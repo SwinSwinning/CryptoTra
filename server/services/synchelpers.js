@@ -1,9 +1,6 @@
 const { createRsiCalculator, createEmaCalculator } = require('./tahelpers');
 const { sendTelegramMessage } = require('./telegram');
 
-// const { file1 } = require('./cmc.json')
-// const { file2 } = require('./kraken.json')
-
 
 
 const PreprocessPairResponseData = (response) => {
@@ -44,22 +41,7 @@ const PreprocessPairResponseData = (response) => {
 
       const latestCandle = EnrichCurrentCandle(candleTa.slice(0, candleTa.length - i)); // enrich (add last change percentages ) to the latest candle ( Take sliced candlearray as input)
 
-      // if (numOfCandles > 1) {
-      // const prevCandle = candleTa[candleTa.length - 2 - i];
-
-
-      // const triggerResult = CheckTrigger(latestCandle, prevCandle);
-      // latestCandle.trigger = triggerResult.uptrend.triggered || triggerResult.downtrend.triggered; // Add a triggered property to the latest candle
-      // if (i === 0) {    // Set the latesttriggerresult for hte most recent candle to prevent multiple notifications from being sent out.
-      //   latestTriggerResult = triggerResult
-      // }
-      // }
-      // else {
-      //   console.log("not enough Candle Data to check previous candle for trigger")
-      //   latestTriggerResult = null
-      //   latestCandle.trigger=false
-      // }
-
+  
       enrichedArray.push(latestCandle)
 
 
@@ -86,17 +68,6 @@ function Assign(candle) {
   return result
 }
 
-// function Assign(candle) {
-//   const [timestamp, , , low, close, , volume] = candle; // assign the candle data to the variables timestamp, low, close, and volume 
-//   const result = {
-//     timestamp,
-//     low,
-//     close,
-//     volume
-//   }
-
-//   return result
-// }
 
 function EnrichCurrentCandle(arr) {
   const currentCandle = arr[arr.length - 1];
@@ -114,56 +85,52 @@ function EnrichCurrentCandle(arr) {
   return currentCandle;
 };
 
-function createCalculateIndicators(indicators) {
-  const indicatorFuncs = {};
+function CrossCheckTickers(cmc, kraken) {
 
-  for (const name of indicators) {
-    const match = name.match(/^([a-zA-Z]+)(\d+)$/);
-    if (!match) continue;
+  const symbolMap = {   // add here any other symbols that differ between CMC and Kraken
+    BTC: "XBT",
+    DOGE: "XDG",
+    FRAX: "FXS",
+    AXL: "WAXL",
+    $MICHI: "MICHI",
+    $M: "M",
 
-    const type = match[1].toLowerCase();
-    const period = Number(match[2]);
 
-    if (type === "ema") indicatorFuncs[name] = createEmaCalculator(period);
-    if (type === "rsi") indicatorFuncs[name] = createRsiCalculator(period);
+  };
+
+
+  const result = [];
+
+  // Build lookup from Kraken by altname
+  const krakenSymbols = new Set();
+  for (const [key, val] of Object.entries(kraken.data.result)) {
+    krakenSymbols.add(key);
+    krakenSymbols.add(val.altname);
   }
 
-  return function calculateForCandle(candle) {
-    const close = Number(candle.close);
-    const results = {};
+  for (kraksym of krakenSymbols) {
 
-    for (const name in indicatorFuncs) {
-      results[name] = indicatorFuncs[name](close);
+    for (const coin of cmc.data) {
+      const cmcSym = coin.symbol;
+      const mappedSym = symbolMap[cmcSym] || cmcSym;
+      if (kraksym === mappedSym) {
+        result.push({
+          cmcid: coin.id,
+          symbol: cmcSym,
+          name: coin.name
+        });
+        break;
+      }
     }
-    return results;
-  };
-}
-
-function createAvgVolumeCalculator(length = 100) {
-  let volumeSum = 0;
-  let volumeQueue = [];
-
-  return function update(newVolume) {
-    newVolume = Number(newVolume);
-    if (isNaN(newVolume)) return 0;
-
-    volumeQueue.push(newVolume);
-    volumeSum += newVolume;
-
-    if (volumeQueue.length > length) {
-      const removed = volumeQueue.shift();
-      volumeSum -= removed;
-    }
-
-    return volumeSum / volumeQueue.length;
-  };
+  }
+  return [result, symbolMap];
 }
 
 function CheckTrigger(coin, minConditions = 2) {
 
   const candle = coin.ticker.krakenCandle[0]
   const minAvgVol = candle.last100volavg > 2000
-  const aboveAvgVolume = candle.volume > candle.last100volavg * 0.7; // Check if the current volume is above 70% of the average volume
+  //const aboveAvgVolume = candle.volume > candle.last100volavg * 0.7; // Check if the current volume is above 70% of the average volume
 
   console.log("----- Coin ", coin.ticker.cmcticker)
   console.log("Last 30 min change ", candle.last6change)
@@ -173,30 +140,6 @@ function CheckTrigger(coin, minConditions = 2) {
   console.log("RSI ", candle.rsi14)
   console.log("-----------------------------")
 
-
-  // ===== Uptrend Signals =====
-  const uptrend = {
-    aboveAvgVolume,
-    closeAboveEMA200: candle.price > candle.ema200,
-    ema50Above200: candle.ema50 > candle.ema200,
-    rsi50to70Up: candle.rsi14 >= 50 && candle.rsi14 <= 70
-
-  };
-
-  // ===== Downtrend Signals =====
-  const downtrend = {
-    aboveAvgVolume,
-    closeBelowEMA200: candle.price < candle.ema200,
-    ema50Below200: candle.ema50 < candle.ema200,
-    rsi30to50Down: candle.rsi14 <= 50 && candle.rsi14 >= 30
-
-  };
-
-  // ===== PriceSpike UP Signals =====
-  const pricespike = coin.p1h_change > 5
-  const pricerising = (coin.p1h_change > 0) && (coin.p1h_change < coin.p24h_change && coin.p24h_change < coin.p7d_change)
-  const priceincrease = coin.p1h_change > 2 && coin.p24h_change > coin.p1h_change
-  const lastchange = candle.last1change > 2
 
   // ===== Protections  =====
   const downcond =
@@ -213,32 +156,10 @@ function CheckTrigger(coin, minConditions = 2) {
     candle.ema50 > candle.ema200 &&
     candle.rsi14 < 70
 
-  // Helper to format results
-  const formatResults = (name, signals) => {
-    const otherConditions = Object.entries(signals)
-      .filter(([key]) => key !== "aboveAvgVolume")
-      .map(([key, value]) => ({ condition: key, passed: value }));
-
-    const passedCount = otherConditions.filter(c => c.passed).length;
-
-    const triggered = signals.aboveAvgVolume && (passedCount >= minConditions);
-    return {
-      name,
-      triggered,
-      conditions: [
-        { condition: "aboveAvgVolume", passed: signals.aboveAvgVolume },
-        ...otherConditions
-      ]
-    };
-  };
 
   return { coin: coin, trigger: upcond || downcond }
-  // return {coin: coin, trigger: minAvgVol && (pricerising || pricespike || priceincrease || lastchange)}
 
-  return {
-    uptrend: formatResults("Uptrend", uptrend),
-    downtrend: formatResults("Downtrend", downtrend)
-  };
+
 
 }
 
@@ -256,7 +177,7 @@ function sendNotification(coin, string) {  // {coinname, Boolean trigger}
   let message = `${string} last period: \n`
   for (const c of coin) {
     const coinname = c.ticker.name.replaceAll(" ", "-")
-    //message += `<a href="https://www.tradingview.com/chart/jqlM94AL/?symbol=KRAKEN%3A${c.ticker.cmcticker}">${c.ticker.name}</a> -- ${pctEmoji(c.p1h_change)}\n`;
+
     message += `<a href="https://coinmarketcap.com/currencies/${coinname}">${c.ticker.name} (${c.ticker.krakenticker})</a> -- ${pctEmoji(c.p1h_change)}\n` +
       `last 2 change ----: ${pctEmoji(c.ticker.krakenCandle[0].last2change)}\n` +
       `30m Change ----------: ${pctEmoji(c.ticker.krakenCandle[0].last6change)}\n` +
@@ -265,23 +186,14 @@ function sendNotification(coin, string) {  // {coinname, Boolean trigger}
 
   }
 
-  // const message = `Coin: ${triggerResult.coin}\n` +
-  //   `Current Price: ${Number(candle.close).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}\n` +
-  //   `Last Change --------: ${pctEmoji(candle.last1change)}\n` +
-  //   
-  //   `12h Change ---------: ${pctEmoji(candle.last144change)}\n` +
-  //   `24h Change----------: ${pctEmoji(candle.last288change)}\n` +
-  //   `RSI-----------------------: ${candle.rsi14.toFixed(2)}\n` +
-  //   `EMA21----------------: ${Number(candle.ema21).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}\n` +
-  //   `EMA50----------------: ${Number(candle.ema50).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}\n` +
-  //   `EMA200---------------: ${Number(candle.ema200).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}\n` +
-  //   `\nConditions:\n${conditionsText}`;
+
 
 
   console.log(message)
 
   sendTelegramMessage(message);
 }
+
 
 function CheckTriggerold(candle, prevCandle, minConditions = 2) {
 
@@ -369,47 +281,50 @@ function sendNotificationold(candle, ticker, conditions) {
 }
 
 
-function CrossCheckTickers(cmc, kraken) {
+function createCalculateIndicators(indicators) {
+  const indicatorFuncs = {};
 
-  const symbolMap = {   // add here any other symbols that differ between CMC and Kraken
-    BTC: "XBT",
-    DOGE: "XDG",
-    FRAX: "FXS",
-    AXL: "WAXL",
-    $MICHI: "MICHI",
-    $M: "M",
+  for (const name of indicators) {
+    const match = name.match(/^([a-zA-Z]+)(\d+)$/);
+    if (!match) continue;
 
+    const type = match[1].toLowerCase();
+    const period = Number(match[2]);
 
-  };
-
-
-  const result = [];
-
-  // Build lookup from Kraken by altname
-  const krakenSymbols = new Set();
-  for (const [key, val] of Object.entries(kraken.data.result)) {
-    krakenSymbols.add(key);
-    krakenSymbols.add(val.altname);
+    if (type === "ema") indicatorFuncs[name] = createEmaCalculator(period);
+    if (type === "rsi") indicatorFuncs[name] = createRsiCalculator(period);
   }
 
-  for (kraksym of krakenSymbols) {
+  return function calculateForCandle(candle) {
+    const close = Number(candle.close);
+    const results = {};
 
-    for (const coin of cmc.data) {
-      const cmcSym = coin.symbol;
-      const mappedSym = symbolMap[cmcSym] || cmcSym;
-      if (kraksym === mappedSym) {
-        result.push({
-          cmcid: coin.id,
-          symbol: cmcSym,
-          name: coin.name
-        });
-        break;
-      }
+    for (const name in indicatorFuncs) {
+      results[name] = indicatorFuncs[name](close);
     }
-  }
-  return [result, symbolMap];
+    return results;
+  };
 }
 
+function createAvgVolumeCalculator(length = 100) {
+  let volumeSum = 0;
+  let volumeQueue = [];
+
+  return function update(newVolume) {
+    newVolume = Number(newVolume);
+    if (isNaN(newVolume)) return 0;
+
+    volumeQueue.push(newVolume);
+    volumeSum += newVolume;
+
+    if (volumeQueue.length > length) {
+      const removed = volumeQueue.shift();
+      volumeSum -= removed;
+    }
+
+    return volumeSum / volumeQueue.length;
+  };
+}
 
 
 module.exports = {

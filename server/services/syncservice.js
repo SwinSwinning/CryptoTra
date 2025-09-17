@@ -1,5 +1,5 @@
 const { KrakenfetchAPIData, KrakenGetAssets } = require('./APIservices/kraken');
-const { CMCGainersLosers, CMCfetchAPIData, CMCMapAPI } = require('./APIservices/cmc');
+const { CMCMapAPI } = require('./APIservices/cmc');
 const { SaveKrakenToDB, DeleteAllfromDB, GetCandlesDB, SaveTickerDB, GetTickersDB, SaveCmcGainersLosersDB, GetCMCTopDB } = require('./dbservices');
 const { PreprocessPairResponseData, sendNotification, CrossCheckTickers, CheckTrigger } = require('./synchelpers')
 
@@ -19,37 +19,28 @@ const UpdateGainersLosers = async () => {
 
   //const gainers = await CMCGainersLosers("desc");  // get top 200 CMC gainers   // 1 credit
   //fs.writeFileSync("cmcgainers.json", JSON.stringify(gainers, null, 2), "utf-8");
-  const gainers = require('./cmcgainers.json');
+  const gainers = require('./testfiles/cmcgainers.json');
 
   //const losers = await CMCGainersLosers("asc");   // get top 200 losers // 1 credit
-  const losers = require('./cmclosers.json');
-
-
+  const losers = require('./testfiles/cmclosers.json');
 
   // Crosscheck to determine which ids are available in both platforms
-  const cmcids = []
-  
+
+
   const TiAtrendingpairsKrakenTicker = []
   const toscan = [gainers, losers]
   for (const set of toscan)
-    for (const pair of set.data) {                // add a loop so it also checks for losers
+    for (const pair of set.data) {                
       for (const apair of availablepairs) {
         if (pair.id === apair.cmcId) {
-
-          cmcids.push(pair.id)
+        
           TiAtrendingpairsKrakenTicker.push(apair)
-          //console.log("matched", pair.name)     
+              
           break;
         }
       }
     }
-  //console.log(cmcids)
-  // filter full ticker table with the cmcids that were found in both platforms
-  //const trendingpairs = await GetTickersDB(cmcids)   // perhaps not needed
 
-  //get fitered cmc data
-  //const latest = await FetchCMC(cmcids); //  1 credit
-  //const latest = require('./cmclatestquotes.json'); // get CMC data      Do I really need this?!!?!
 
   const responses = await Fetch(TiAtrendingpairsKrakenTicker); // get Kraken data
 
@@ -57,23 +48,16 @@ const UpdateGainersLosers = async () => {
   const preprocessed = PreProcess(responses)  // add candle change calculations for kraken data
 
 
-
   await SaveRecords(preprocessed, {"gainers":gainers, "losers": losers})  // Save into Krakencandle and CMC latest
   console.log("Successfully saved to Databases")
 
-
-
-  // const maxtoreturn = 10
- //const RecordsObjArr = await GetRecords((cmcids.slice(0, maxtoreturn))); // get from kraken candle table filtered on cmcids
 const RecordsObjArr = await GetRecords(); 
 
   //Check if any candles met the alert conditions sending notifications
-
   TriggerAndAlert(RecordsObjArr.toprecords)
   TriggerAndAlert(RecordsObjArr.botrecords)
 
   return RecordsObjArr
-
 
 }
 
@@ -98,47 +82,6 @@ const TriggerAndAlert = async (toprecords) => {
 
 }
 
-const HandleRet = async () => {
-  // 1. Fetching and Preprocessing for storage into db
-  // const tradingpairs = [{id: 1, cmcid: 1, name: 'Bitcoin', cmcticker: 'BTCUSD', krakenticker: 'XBTUSD'},
-  // {id: 2, cmcid: 1027, name: 'Ethereum', cmcticker: 'ETHUSD', krakenticker: 'ETHUSD'}]
-
-  let tradingpairs = await GetTickersDB() // || tradingPairs;    // uncomment < ---------------------------
-  //1 check if tickers data contains data
-  if (tradingpairs.length === 0) {
-    console.log("No tickers in DB, saving tickers data")
-    tradingpairs = await FetchAvailableTickers()
-  }
-
-
-
-  //const latest = await FetchCMC(tradingpairs); 
-  const latest = require('./cmclatestquotes.json'); // get CMC data
-
-  const responses = await Fetch(tradingpairs); // get Kraken data
-
-
-  // 2. Preprocess the response for each ticker
-  const preprocessed = PreProcess(responses)
-
-
-
-  // 5. Storing into databases
-  console.log("Storing into Databases")
-  await SaveRecords(preprocessed, latest)
-  console.log("Successfully saved to Database")
-
-
-
-  // 6. Returning all records from Database
-  const records = await GetRecords();
-  console.log("Successfully retrieved records from Database")
-  return records
-
-
-
-
-};
 
 const PreProcess = (responses) => {
   const preprocessed = []
@@ -164,32 +107,12 @@ const PreProcess = (responses) => {
 }
 
 
-const MergeAPIData = async () => {
-  const tickers = await GetTickersDB()
-  const existingtickers = []
-  for (const ticker of tickers) {
-    console.log("checking :", ticker.krakenticker)
 
-
-  }
-  console.log(tradingpairsArr)
-  // First check if each pair exists in db
-
-  const result = []
-  for (const pair of tradingpairsArr) {
-    console.log("Retrieving data for pair:", pair);
-    const response = await fetchAPIData(pair);     // Fetch external API data    
-
-    result.push({ ticker: pair, data: response });
-    await sleep(800); // Sleep to avoid hitting the API rate limit
-  }
-  return result
-}
 
 const FetchAvailableTickers = async (firstfetch) => {
   // Get from CMC and Kraken
-  //const cmc = require('./cmcmap.json');
-  const cmc = await CMCMapAPI();        // 1 credit
+  const cmc = require('./testfiles/cmcmap.json');
+  //const cmc = await CMCMapAPI();        // 1 credit
 
   //const kraken = require('./kraken.json');
   const kraken = await KrakenGetAssets();
@@ -213,15 +136,6 @@ const FetchAvailableTickers = async (firstfetch) => {
 
 }
 
-const FetchCMC = async (cmcIDs) => {
-
-  const result = await CMCfetchAPIData(cmcIDs)
-
-  return result
-
-
-}
-
 const Fetch = async (TiAkrakenTickers) => {
   const result = []
   for (const t of TiAkrakenTickers) {
@@ -241,11 +155,7 @@ const Fetch = async (TiAkrakenTickers) => {
 
 const SaveRecords = async (krakenparsed, trendingobject) => {
   await SaveKrakenToDB(krakenparsed); // Attempt to save to DB and save the result to dbsave
-  //  const validCmcIds = []
 
-  //  for (const krakencoin of krakenparsed){
-  //   validCmcIds.push(krakencoin.ticker.cmcId)
-  //  }
 
   const validCmcIds = new Set(krakenparsed.map(krakencoin => krakencoin.ticker.cmcId));
 
@@ -258,11 +168,7 @@ const SaveRecords = async (krakenparsed, trendingobject) => {
       }
     }
       await SaveCmcGainersLosersDB(tickers = tosave, string = name);
-  }
-
-
-  //console.log("missing Ticker: ", missingGainers)
-
+      }
 
 };
 
@@ -282,4 +188,4 @@ const GetRecords = async (cmcids) => {
 
 };
 
-module.exports = { DeleteAllRecords, GetRecords, HandleRet, FetchAvailableTickers, UpdateGainersLosers };
+module.exports = { DeleteAllRecords, GetRecords, FetchAvailableTickers, UpdateGainersLosers };

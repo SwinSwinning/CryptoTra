@@ -99,28 +99,3 @@ id : UCIDs.join(',')
 module.exports = { CMCfetchAPIData, CMCGainersLosers, CMCMapAPI};
 
 
-
-// const Unpack = (data) => {
-//   try {
-    
-//     const tosave = []
-//     const records = data.data
-//     const timestamp = data.status.timestamp; // Get the timestamp from the data
-//     // console.log(records)
-//     Object.values(records).forEach(item => {
-//       console.log(item.id, item.name, item.symbol, item.quote["825"]);
-//       tosave.push({
-//         UCID: item.id,
-//         timestamp: timestamp,
-//         name: item.name,
-//         symbol: item.symbol,
-//         price: item.quote["825"].price,
-//         percent_change_24h: item.quote["825"].percent_change_24h
-//       })
-     
-//     });
-//     // console.log(tosave)
-//   } catch (error) {
-    
-//   }
-// }

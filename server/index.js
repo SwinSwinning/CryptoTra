@@ -1,11 +1,5 @@
 require('dotenv').config()
-const {  UpdateGainersLosers, HandleRet, DeleteAllRecords, GetRecords, FetchAvailableTickers} = require('./services/syncservice');
-const { SaveKrakenToDB, DeleteAllfromDB, GetCandlesDB, SaveTickerDB, GetTickersDB, SaveLatestCMCDB, GetTopDB, SaveTopDB } = require('./services/dbservices');
-
-// const { CMCfetchAPIData, CMCGainersLosers } = require('./services/APIservices/cmc');
-// const { MergeAPICandleData } = require('./services/synchelpers');
-
-
+const {  UpdateGainersLosers, DeleteAllRecords, GetRecords, FetchAvailableTickers} = require('./services/syncservice');
 
 const express = require('express');
 const cors = require('cors');
@@ -21,7 +15,7 @@ app.use(cors());
 
 cron.schedule('*/30 * * * *', async () => {
 try {
-  const records = await UpdateGainersLosers();
+  await UpdateGainersLosers();
   console.log('Cron job success:');
 } catch (err) {
   console.error('Cron job failed:', err.message);
@@ -45,18 +39,6 @@ app.get('/del', async (req, res) => {
 
 });
 
-app.get('/ret', async (req, res) => {
-
-  try {
-    const result = await HandleRet(); 
-
-    return res.json({ success: true, records: result  });
-
-  } catch (error) {
-    console.log('Error in /ret route:' + error.message);
-    return res.status(500).json({ success: false, msg: error.message });
-  }
-});
 
 // This is run ever 30 minutes or hour  3 credits 
 app.get('/upd', async (req, res) => {  
@@ -71,8 +53,8 @@ app.get('/upd', async (req, res) => {
 
 });
 
-app.get('/getrecords', async (req, res) => {
-  const ticker = req.query.ticker; // Get ticker from the query parameter 
+app.get('/getrecords', async (req, res) => { //retrieve existing records from DB on page load/refresh
+  const ticker = req.query.ticker; 
   try {    
     let result = null
         if (ticker) { // If there is a ticker, filter the records based on ticker..
@@ -90,7 +72,7 @@ app.get('/getrecords', async (req, res) => {
 );
 
  // this is run once ever week or so   1 credit
-app.get('/tic', async (req, res) => {
+app.get('/tic', async (req, res) => { //update available tickers on Kraken
 
   try {
     const result = await FetchAvailableTickers();
@@ -101,17 +83,7 @@ app.get('/tic', async (req, res) => {
   }
 });
 
-app.get('/test', async (req, res) => {
 
-  try {
-    
-    const toprecords = await GetTopDB("gainers"); // get highest gainers from cmc latest
-    return res.json({ success: true, records: toprecords });
-  } catch (error) {
-    console.log('Error in /test route:' + error.message);
-    return res.status(500).json({ success: false, msg: error.message });
-  }
-});
 
 app.listen(port, '0.0.0.0',  () => {
   console.log(`Server running on http://localhost:${port}`);

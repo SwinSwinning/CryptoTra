@@ -6,23 +6,23 @@ export default function CoinDetails({ coin, onBack }) {
       </button>
       <h2 className="text-xl font-bold">{coin.ticker.name}</h2>
       <p
-  className="text-blue-500 cursor-pointer hover:underline"
-  onClick={() =>
-    window.open(
-      `https://coinmarketcap.com/currencies/${coin.ticker.name}`,
-      "_blank"
-    )
-  }
->
-  {coin.ticker.cmcticker}
-</p>
-      <br/>
+        className="text-blue-500 cursor-pointer hover:underline"
+        onClick={() =>
+          window.open(
+            `https://coinmarketcap.com/currencies/${coin.ticker.name}`,
+            "_blank"
+          )
+        }
+      >
+        {coin.ticker.cmcticker}
+      </p>
+      <br />
       <p>Price: {coin.price}</p>
       <p>1h Change: {coin.p1h_change}%</p>
       <p>24h Change: {coin.p24h_change}%</p>
       <p>7d Change: {coin.p7d_change}%</p>
       <p>CMC id: {coin.cmcId}</p>
-      <br/>
+      <br />
 
       <p className="text-gray-700">Krakenprice {coin.ticker.krakenCandle[0].price.toFixed(4)}</p>
       <p className="text-gray-700">24h kraken Change: {coin.ticker.krakenCandle[0].last288change.toFixed(2)}%</p>
