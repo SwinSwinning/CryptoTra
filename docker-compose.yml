@@ -1,23 +1,18 @@
 services:
   server:
-    # Build the image from the Dockerfile in the server directory
     build: ./server
+    container_name: server
     ports:
-      # Map the container port 8080 to the host port 8080
       - "8080:8080"
-    # Mount the server code to the container for live reloading during development
-    volumes:
-      - ./server:/app
+    environment:
+      - NODE_ENV=prod
 
   client:
-    # Build the image from the Dockerfile in the client directory
     build: ./client
+    container_name: client
     ports:
-      # Map the container port 5173 to the host port 5173
-      - "5173:5173"
-    # Mount the client code for live reloading
-    volumes:
-      - ./client:/app
-    # Set up a dependency to ensure the server starts first
+      - "3000:80"
+    environment:
+      - NODE_ENV=production
     depends_on:
       - server

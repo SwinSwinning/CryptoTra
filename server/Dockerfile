@@ -1,20 +1,19 @@
-# Use a Node.js base image
-FROM node:18-alpine
+# Server/Dockerfile
+FROM node:20-alpine
 
-# Set the working directory in the container
 WORKDIR /app
 
-# Copy package.json and package-lock.json to the working directory
-COPY package*.json ./
-
 # Install dependencies
+COPY package*.json ./
 RUN npm install
 
-# Copy the rest of the application code
+# Copy the rest of the server code
 COPY . .
 
-# Expose the port the server listens on
-EXPOSE 8080
+# Generate Prisma client
+RUN npx prisma generate
 
-# Command to start the application
-CMD ["npm", "start"]
+# Apply schema changes before starting server
+CMD npx prisma db push && npm start
+
+EXPOSE 8080
