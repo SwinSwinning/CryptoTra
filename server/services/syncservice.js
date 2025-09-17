@@ -9,39 +9,41 @@ const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 const UpdateGainersLosers = async () => {
 
-    let availablepairs = await GetTickersDB() // get all available Kraken pairs
+  let availablepairs = await GetTickersDB() // get all available Kraken pairs
   //1 check if tickers data contains data
   if (availablepairs.length === 0) {
     console.log("No tickers in DB, saving tickers data")
-    await FetchAvailableTickers(firstfetch=true) // 1 credit
+    await FetchAvailableTickers(firstfetch = true) // 1 credit
     availablepairs = await GetTickersDB()
   }
 
-  const gainers = await CMCGainersLosers("desc");  // get top 200 CMC gainers   // 1 credit
-  // fs.writeFileSync("cmcgainers.json", JSON.stringify(gainers, null, 2), "utf-8");
-  //const gainers = require('./cmcgainers.json');
+  //const gainers = await CMCGainersLosers("desc");  // get top 200 CMC gainers   // 1 credit
+  //fs.writeFileSync("cmcgainers.json", JSON.stringify(gainers, null, 2), "utf-8");
+  const gainers = require('./cmcgainers.json');
 
-  // const losers = await CMCGainersLosers("asc");   // get top 200 losers // 1 credit
-  //const losers = require('./cmclosers.json');    
+  //const losers = await CMCGainersLosers("asc");   // get top 200 losers // 1 credit
+  const losers = require('./cmclosers.json');
 
 
 
   // Crosscheck to determine which ids are available in both platforms
   const cmcids = []
+  
   const TiAtrendingpairsKrakenTicker = []
+  const toscan = [gainers, losers]
+  for (const set of toscan)
+    for (const pair of set.data) {                // add a loop so it also checks for losers
+      for (const apair of availablepairs) {
+        if (pair.id === apair.cmcId) {
 
-  for (const pair of gainers.data) {                // add a loop so it also checks for losers
-    for (const apair of availablepairs) {
-      if (pair.id === apair.cmcId) {
-     
-        cmcids.push(pair.id)
-        TiAtrendingpairsKrakenTicker.push(apair)
-        //console.log("matched", pair.name)     
-        break;
+          cmcids.push(pair.id)
+          TiAtrendingpairsKrakenTicker.push(apair)
+          //console.log("matched", pair.name)     
+          break;
+        }
       }
     }
-  }
-//console.log(cmcids)
+  //console.log(cmcids)
   // filter full ticker table with the cmcids that were found in both platforms
   //const trendingpairs = await GetTickersDB(cmcids)   // perhaps not needed
 
@@ -56,18 +58,19 @@ const UpdateGainersLosers = async () => {
 
 
 
-  await SaveRecords(preprocessed, gainers)  // Save into Krakencandle and CMC latest
+  await SaveRecords(preprocessed, {"gainers":gainers, "losers": losers})  // Save into Krakencandle and CMC latest
   console.log("Successfully saved to Databases")
 
 
 
-  const maxtoreturn = 10
-  const RecordsObjArr = await GetRecords((cmcids.slice(0, maxtoreturn))); // get from kraken candle table filtered on cmcids
-   
-  
+  // const maxtoreturn = 10
+ //const RecordsObjArr = await GetRecords((cmcids.slice(0, maxtoreturn))); // get from kraken candle table filtered on cmcids
+const RecordsObjArr = await GetRecords(); 
+
   //Check if any candles met the alert conditions sending notifications
-  
+
   TriggerAndAlert(RecordsObjArr.toprecords)
+  TriggerAndAlert(RecordsObjArr.botrecords)
 
   return RecordsObjArr
 
@@ -76,21 +79,21 @@ const UpdateGainersLosers = async () => {
 
 const TriggerAndAlert = async (toprecords) => {
 
-const triggerResults = []
-  for(const gainerCoin of toprecords) {
-        triggerResults.push(CheckTrigger(gainerCoin))
+  const triggerResults = []
+  for (const gainerCoin of toprecords) {
+    triggerResults.push(CheckTrigger(gainerCoin))
   }
 
   const coinToAlert = []
-  for (const cointrigger of triggerResults){
-          if(cointrigger.trigger){
-            coinToAlert.push(cointrigger.coin)
-        }
+  for (const cointrigger of triggerResults) {
+    if (cointrigger.trigger) {
+      coinToAlert.push(cointrigger.coin)
+    }
   }
 
-    if (coinToAlert.length > 0){
-      sendNotification(coinToAlert, "Gainers");
-    }
+  if (coinToAlert.length > 0) {
+    sendNotification(coinToAlert, "Gainers");
+  }
 
 
 }
@@ -207,7 +210,7 @@ const FetchAvailableTickers = async (firstfetch) => {
   }
 
   await SaveTickerDB(tradingPairs, firstfetch)
-  
+
 }
 
 const FetchCMC = async (cmcIDs) => {
@@ -224,39 +227,42 @@ const Fetch = async (TiAkrakenTickers) => {
   for (const t of TiAkrakenTickers) {
     console.log("Retrieving data for pair:", t.name);
     const response = await KrakenfetchAPIData(t.krakenticker);     // Fetch external API data    
-    if (response.data.error.length === 0){
+    if (response.data.error.length === 0) {
       result.push({ ticker: t, data: response });
     } else {
       console.log(`error found for ${t.krakenticker} - ${response.data.error}`)
     }
-    
+
     await sleep(400); // Sleep to avoid hitting the API rate limit
   }
   return result
 }
 
 
-const SaveRecords = async (krakenparsed, cmcgainers) => {
-
+const SaveRecords = async (krakenparsed, trendingobject) => {
+  await SaveKrakenToDB(krakenparsed); // Attempt to save to DB and save the result to dbsave
   //  const validCmcIds = []
-   
+
   //  for (const krakencoin of krakenparsed){
   //   validCmcIds.push(krakencoin.ticker.cmcId)
   //  }
 
-const validCmcIds = new Set(krakenparsed.map(krakencoin => krakencoin.ticker.cmcId));
+  const validCmcIds = new Set(krakenparsed.map(krakencoin => krakencoin.ticker.cmcId));
 
-    const tosave = []   
+  for (const [name, values] of Object.entries(trendingobject)) {
 
-    for (const cmccoin of cmcgainers.data) {
+    const tosave = []
+    for (const cmccoin of values.data) {
       if (validCmcIds.has(cmccoin.id)) {
         tosave.push(cmccoin)
-      } 
+      }
     }
-  
-  await SaveKrakenToDB(krakenparsed); // Attempt to save to DB and save the result to dbsave
- await SaveCmcGainersLosersDB(tickers=tosave, string="gainers");
+      await SaveCmcGainersLosersDB(tickers = tosave, string = name);
+  }
+
+
   //console.log("missing Ticker: ", missingGainers)
+
 
 };
 
@@ -270,8 +276,9 @@ const DeleteAllRecords = async () => {
 const GetRecords = async (cmcids) => {
   const result = await GetCandlesDB(cmcids);
   const toprecords = await GetCMCTopDB(cmcids, "gainers"); // get highest gainers from cmc latest
+  const botrecords = await GetCMCTopDB(cmcids, "losers"); // get biggest losers from cmc latest
 
-  return {records: result, toprecords: toprecords}
+  return { records: result, toprecords: toprecords, botrecords: botrecords}
 
 };
 

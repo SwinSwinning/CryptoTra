@@ -2,7 +2,7 @@ export default function MyCard({ coin, onClick }) {
   return (
         <div 
           key={coin.id} 
-          className="p-4 rounded-xl shadow bg-white"    
+          className="p-4 rounded-xl shadow bg-white hover:scale-105 transition-transform duration-300"    
           onClick={onClick}    >
                   
           <h3 className="font-bold text-lg">{coin.ticker.name}</h3>

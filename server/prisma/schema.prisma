@@ -15,10 +15,25 @@ model Ticker {
   cmcticker   String?
   krakenticker String? 
 
-  cmcGainers  CmcGainers[]  // one-to-many relation
+cmcGainers CmcGainers[] @relation("TickerGainers")
+cmcLosers CmcLosers[] @relation("TickerLosers")
 
   krakenCandle KrakenCandle[] // one-to-many relation
   
+}
+
+
+model CmcGainers {  
+  id          Int     @id @default(autoincrement()) 
+  cmcId    Int
+  price       Float
+  p1h_change  Float
+  p24h_change Float
+  p7d_change  Float
+  p30d_change Float  
+
+  ticker      Ticker  @relation(fields: [cmcId], references: [cmcId], onDelete: Cascade, name: "TickerGainers")
+ 
 }
 
 model CmcLosers {  
@@ -30,22 +45,11 @@ model CmcLosers {
   p7d_change  Float
   p30d_change Float  
 
-  
+  ticker      Ticker  @relation(fields: [cmcId], references: [cmcId], onDelete: Cascade, name: "TickerLosers")
  
 }
 
-model CmcGainers {  
-  id          Int     @id @default(autoincrement()) 
-  cmcId    Int
-  price       Float
-  p1h_change  Float
-  p24h_change Float
-  p7d_change  Float
-  p30d_change Float  
 
-  ticker      Ticker  @relation(fields: [cmcId], references: [cmcId], onDelete: Cascade)
- 
-}
 
 model KrakenCandle {
   id    Int    @id @default(autoincrement())

@@ -9,7 +9,7 @@ export default function CoinDetails({ coin, onBack }) {
   className="text-blue-500 cursor-pointer hover:underline"
   onClick={() =>
     window.open(
-      `https://www.tradingview.com/chart/jqlM94AL/?symbol=KRAKEN%3A${coin.ticker.cmcticker}`,
+      `https://coinmarketcap.com/currencies/${coin.ticker.name}`,
       "_blank"
     )
   }

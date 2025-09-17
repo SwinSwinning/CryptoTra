@@ -62,7 +62,7 @@ app.get('/ret', async (req, res) => {
 app.get('/upd', async (req, res) => {  
   try {
     const result = await UpdateGainersLosers();  
-    return res.json({ success: true, records: result[0], toprecords: result[1]  });
+    return res.json({ success: true, data: result  });
 
   } catch (error) {
     console.log('Error in /upd route:' + error.message);
@@ -74,13 +74,13 @@ app.get('/upd', async (req, res) => {
 app.get('/getrecords', async (req, res) => {
   const ticker = req.query.ticker; // Get ticker from the query parameter 
   try {    
-    let data = null
+    let result = null
         if (ticker) { // If there is a ticker, filter the records based on ticker..
-       data = await GetRecords(ticker);      
+       result = await GetRecords(ticker);      
     } else { // .. otherwise get all the records
-       data = await GetRecords();    
+       result = await GetRecords();    
     }    
-     res.json({ success: true, data })
+     res.json({ success: true, data: result })
   } catch (error) {
     console.log('Error in /getrecords route:' + error.message);
     return res.status(500).json({ success: false, msg: error.message });
