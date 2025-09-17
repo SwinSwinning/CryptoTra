@@ -203,7 +203,7 @@ function App() {
   return (
     <div className="flex flex-col min-h-screen">
       <header className="text-center bg-gray-100 p-3">
-        <h1 className="text-indigo-500 mb-5">Crypto Tracker</h1>
+        <h1 className="text-indigo-500 mb-5">Crypto Tracker  (DEV)</h1>
         <div className="flex gap-4">
           <button onClick={() => updateTrending()} className='flex-1'>Update Gainers & Losers</button>
           <button onClick={() => updateAvailablePairs()} className='flex-1'>Update Available Crypto pairs</button>
