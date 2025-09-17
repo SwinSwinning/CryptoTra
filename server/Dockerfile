@@ -1,8 +1,20 @@
-FROM node:20-alpine AS deps
+# Use a Node.js base image
+FROM node:18-alpine
+
+# Set the working directory in the container
 WORKDIR /app
+
+# Copy package.json and package-lock.json to the working directory
 COPY package*.json ./
-RUN npm ci --omit=dev
-RUN npx prisma generate
-COPY src ./src
-EXPOSE 3001
-CMD ["npm","start"]
+
+# Install dependencies
+RUN npm install
+
+# Copy the rest of the application code
+COPY . .
+
+# Expose the port the server listens on
+EXPOSE 8080
+
+# Command to start the application
+CMD ["npm", "start"]
