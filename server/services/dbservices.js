@@ -1,28 +1,8 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
-// const SaveTickerDB = async (tickers) => {   // Update so it only adds new tickers
-//   try {
-//     const tosave = []
-//     for (const ticker of tickers) {
-//       tosave.push({
-//         cmcticker: ticker.cmcsymbol,
-//         krakenticker: ticker.kraksymbol,
-//         name: ticker.name,
-//         cmcid: ticker.cmcid
-//       })
-//     };
 
-//     await prisma.ticker.createMany({
-//       data: tosave
-//     })
-//     console.log("Tickers saved")
-//   } catch (error) {
-//     throw new Error("Failed to Save tickers to database " + error.message);
-//   }
-// }
-
-const SaveTickerDB = async (tickers, createnew = false) => {   // Update so it only adds new tickers
+const SaveTickerDB = async (tickers, createnew = false) => {   
  
   try {
     if (createnew) {
@@ -66,33 +46,6 @@ const SaveTickerDB = async (tickers, createnew = false) => {   // Update so it o
   }
 }
 
-// const SaveTopDB = async (toprecords, string) => {
-//   try {
-//     let db = null
-//     if (string == "gainers") {
-//       db = prisma.gainers
-//     } else {
-//       db = prisma.losers
-//     }
-//     const tosave = []
-//     for (const ticker of toprecords) {
-
-//       tosave.push({
-//         cmcId: ticker.cmcId,
-//         candleId: ticker.id,
-
-//       })
-//     };
-//     await db.deleteMany({});
-
-//     await db.createMany({
-//       data: tosave
-//     });
-
-//   } catch (error) {
-//     throw new Error("Failed to Save top to database " + error.message);
-//   }
-// }
 
 const SaveCmcGainersLosersDB = async (tickers, string) => {
   try {
@@ -115,23 +68,9 @@ const SaveCmcGainersLosersDB = async (tickers, string) => {
 
       })
     };
-    await db.deleteMany({}) // clear the table first                  
+    await db.deleteMany({}) // clear the table first                 
 
-    // const existingtickers = await prisma.ticker.findMany({
-    //   select: { cmcId: true },
-    // });
-    // const validCmcIds = new Set(existingtickers.map(item => item.cmcId));
 
-    // const tosave = []
-    // const missing = []
-
-    // for (const item of tocheck) {
-    //   if (validCmcIds.has(item.cmcId)) {
-    //     tosave.push(item)
-    //   } else {
-    //     missing.push(item)
-    //   }
-    // }
 
     if (tosave.length === 0) {
       console.warn(`No ${string} to save.`);
@@ -150,7 +89,7 @@ const SaveCmcGainersLosersDB = async (tickers, string) => {
 
 
 const SaveKrakenToDB = async (parsedCandleData) => {
-  // console.log("Saving to DB", candles[0])
+
 
 
   try {
@@ -195,32 +134,6 @@ const SaveKrakenToDB = async (parsedCandleData) => {
     }
 
 
-//     // Build raw SQL
-//     const valuesSQL = tosave
-//       .map(c => `(
-//     '${c.tickerId}',
-//     ${c.timestamp},
-//     ${c.price},
-//     ${c.volume},
-//     ${c.ema21},
-//     ${c.ema50},
-//     ${c.ema200},
-//     ${c.rsi14},
-//     ${c.last1change},
-//     ${c.last6change},
-//     ${c.last144change},
-//     ${c.last288change},
-//     ${c.last100volavg}
-  
-//   )`).join(",");
-
-//     // Execute raw SQL to insert data because sqlite does not support ON CONFLICT DO NOTHING
-//     await prisma.$executeRawUnsafe(`
-//   INSERT OR IGNORE INTO KrakenCandle
-//     (tickerId, timestamp, price, volume, ema21, ema50, ema200, rsi14, last1change, last6change, last144change, last288change, last100volavg)
-//   VALUES ${valuesSQL}
-// `);
-
 await prisma.krakenCandle.deleteMany({})
 
     await prisma.krakenCandle.createMany({
@@ -253,9 +166,7 @@ const GetCandlesDB = async (cmcids = null) => {
       orderBy: [{ timestamp: 'desc' }],
       where: {}
     };
-    // if (ticker) {
-    //   query.where = { ticker };
-    // }
+
 
     if (cmcids && cmcids.length > 0) {
       query.where.tickerRel = {
@@ -272,31 +183,6 @@ const GetCandlesDB = async (cmcids = null) => {
 
 };
 
-// const GetTopDB = async (string) => {
-//   //const db = string === "gainers" ? prisma.gainers : prisma.losers
-//   const direction = string === "gainers" ? "desc" : "asc"
-//   try {
-//     const query = {
-//       orderBy: { p1h_change: direction }, // works here!
-//       take: 4,
-//       include: {
-//         ticker: {
-//           include: {
-//             krakenCandle: {
-//               orderBy: { timestamp: "desc" },
-//               take: 1,
-//             },
-//           },
-//         },
-//       },
-//     };
-//     const candles = await prisma.cmcGainersLosers.findMany(query)
-//     return candles;
-//   } catch (error) {
-//     throw new Error("Failed to retrieve top " + error.message);
-//   }
-
-// }
 
 const GetTickersDB = async (cmcids) => {
   try {
