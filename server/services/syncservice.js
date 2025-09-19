@@ -17,12 +17,12 @@ const UpdateGainersLosers = async () => {
     availablepairs = await GetTickersDB()
   }
 
-  //const gainers = await CMCGainersLosers("desc");  // get top 200 CMC gainers   // 1 credit
+  const gainers = await CMCGainersLosers("desc");  // get top 200 CMC gainers   // 1 credit
   //fs.writeFileSync("cmcgainers.json", JSON.stringify(gainers, null, 2), "utf-8");
-  const gainers = require('./cmcgainers.json');
+  //const gainers = require('./testfiles/cmcgainers.json');
 
-  //const losers = await CMCGainersLosers("asc");   // get top 200 losers // 1 credit
-  const losers = require('./cmclosers.json');
+  const losers = await CMCGainersLosers("asc");   // get top 200 losers // 1 credit
+  //const losers = require('./testfiles/cmclosers.json');
 
 
 
@@ -188,10 +188,10 @@ const MergeAPIData = async () => {
 
 const FetchAvailableTickers = async (firstfetch) => {
   // Get from CMC and Kraken
-  //const cmc = require('./cmcmap.json');
+  //const cmc = require('./testfiles/cmcmap.json');
   const cmc = await CMCMapAPI();        // 1 credit
 
-  //const kraken = require('./kraken.json');
+  //const kraken = require('./testfiles/kraken.json');
   const kraken = await KrakenGetAssets();
 
 

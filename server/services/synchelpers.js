@@ -86,17 +86,7 @@ function Assign(candle) {
   return result
 }
 
-// function Assign(candle) {
-//   const [timestamp, , , low, close, , volume] = candle; // assign the candle data to the variables timestamp, low, close, and volume 
-//   const result = {
-//     timestamp,
-//     low,
-//     close,
-//     volume
-//   }
 
-//   return result
-// }
 
 function EnrichCurrentCandle(arr) {
   const currentCandle = arr[arr.length - 1];
@@ -162,12 +152,12 @@ function createAvgVolumeCalculator(length = 100) {
 function CheckTrigger(coin, minConditions = 2) {
 
   const candle = coin.ticker.krakenCandle[0]
-  const minAvgVol = candle.last100volavg > 2000
+  const minAvgVol = candle.last100volavg > 1000
   const aboveAvgVolume = candle.volume > candle.last100volavg * 0.7; // Check if the current volume is above 70% of the average volume
 
   console.log("----- Coin ", coin.ticker.cmcticker)
   console.log("Last 30 min change ", candle.last6change)
-  console.log("avg vol above 2000 ", minAvgVol)
+  console.log("avg vol above 1000 ", minAvgVol)
   console.log("close above 200  ", candle.price > candle.ema200)
   console.log("50 above 200 ", candle.ema50 > candle.ema200)
   console.log("RSI ", candle.rsi14)
@@ -195,6 +185,8 @@ function CheckTrigger(coin, minConditions = 2) {
   // ===== PriceSpike UP Signals =====
   const pricespike = coin.p1h_change > 5
   const pricerising = (coin.p1h_change > 0) && (coin.p1h_change < coin.p24h_change && coin.p24h_change < coin.p7d_change)
+  const onlyup = coin.p1h_change > 0 && candle.last6change > 0 && coin.p24h_change > 0
+  const onlydown = coin.p1h_change < 0 && candle.last6change < 0 && coin.p24h_change < 0
   const priceincrease = coin.p1h_change > 2 && coin.p24h_change > coin.p1h_change
   const lastchange = candle.last1change > 2
 
@@ -232,7 +224,7 @@ function CheckTrigger(coin, minConditions = 2) {
     };
   };
 
-  return { coin: coin, trigger: upcond || downcond }
+  return { coin: coin, trigger: onlyup || onlydown }
   // return {coin: coin, trigger: minAvgVol && (pricerising || pricespike || priceincrease || lastchange)}
 
   return {

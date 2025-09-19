@@ -19,7 +19,7 @@ app.use(express.json());
 app.use(cors());
 
 
-cron.schedule('*/30 * * * *', async () => {
+cron.schedule('*/15 * * * *', async () => {
 try {
   const records = await UpdateGainersLosers();
   console.log('Cron job success:');
