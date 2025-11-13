@@ -24,6 +24,15 @@ cd CryptoTra
 
 ---
 
+### 3. Populate .env File
+
+```bash
+git clone https://github.com/SwinSwinning/CryptoTra.git
+cd CryptoTra
+```
+
+---
+
 ### 3. Run in Development (hot reload)
 
 This runs the React frontend (Vite) and backend (Node/Express + Prisma) with live reload.
