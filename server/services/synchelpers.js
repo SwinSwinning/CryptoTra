@@ -249,10 +249,13 @@ function sendNotification(coin, string) {  // {coinname, Boolean trigger}
   for (const c of coin) {
     const coinname = c.ticker.name.replaceAll(" ", "-")
     //message += `<a href="https://www.tradingview.com/chart/jqlM94AL/?symbol=KRAKEN%3A${c.ticker.cmcticker}">${c.ticker.name}</a> -- ${pctEmoji(c.p1h_change)}\n`;
-    message += `<a href="https://coinmarketcap.com/currencies/${coinname}">${c.ticker.name} (${c.ticker.krakenticker})</a> -- ${pctEmoji(c.p1h_change)}\n` +
-      `last 2 change ----: ${pctEmoji(c.ticker.krakenCandle[0].last2change)}\n` +
-      `30m Change ----------: ${pctEmoji(c.ticker.krakenCandle[0].last6change)}\n` +
+    message += `<a href="https://coinmarketcap.com/currencies/${coinname}">${c.ticker.name} (${c.ticker.krakenticker})</a>\n` +
+          `last 2 change ----: ${pctEmoji(c.ticker.krakenCandle[0].last2change)}\n` +
+               `30m Change ----------: ${pctEmoji(c.ticker.krakenCandle[0].last6change)}\n` +
+      `1 hour change ${pctEmoji(c.p1h_change)}\n` +
+ 
       `Last 24h Change ----------: ${pctEmoji(c.p24h_change)}\n` +
+      `RSI-----------------------: ${c.ticker.krakenCandle[0].rsi14.toFixed(2)}\n` +
       `Volume : Avg----------: ${c.ticker.krakenCandle[0].volume} : ${c.ticker.krakenCandle[0].last100volavg} \n   \n`
 
   }
