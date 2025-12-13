@@ -90,10 +90,12 @@ const TriggerAndAlert = async (toprecords) => {
       coinToAlert.push(cointrigger.coin)
     }
   }
+  
 
-  if (coinToAlert.length > 0) {
-    sendNotification(coinToAlert, "Gainers");
-  }
+  // Uncomment this to enable Telegram sending
+  // if (coinToAlert.length > 0) {
+  //   sendNotification(coinToAlert, "Gainers");
+  // }
 
 
 }
