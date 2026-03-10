@@ -1,143 +1,182 @@
-# CryptoTraAle – Crypto Tracker & Alerts (Dockerized)
+# CryptoTra: Advanced Market Intelligence & Alert System
 
-CryptoTraNot is a **crypto tracking and alert application** that fetches live candle data at 5-minute intervals for specific ticker symbols. It stores the data in a SQLite/Prisma database, displays recent candle information in a web frontend, and can send Telegram notifications when certain indicator conditions are met.
+[![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white)](https://react.dev/)
+[![Node.js](https://img.shields.io/badge/Node.js-20+-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
+[![Prisma](https://img.shields.io/badge/Prisma-6-2D3748?logo=prisma&logoColor=white)](https://www.prisma.io/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind-4-06B6D4?logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
+[![License: ISC](https://img.shields.io/badge/License-ISC-blue.svg)](https://opensource.org/licenses/ISC)
 
----
-
-## 🚀 Quick Start
-
-### 1. Prerequisites
-
-* [Docker Desktop](https://www.docker.com/products/docker-desktop) installed
-* [Git](https://git-scm.com/) installed
-
-*No need to install Node.js or npm — Docker handles it.*
+**CryptoTra** is a comprehensive full-stack application designed for high-frequency market monitoring and automated technical analysis. By cross-referencing high-momentum assets from CoinMarketCap with tradable pairs on Kraken, CryptoTra identifies high-probability opportunities and delivers real-time alerts directly to your Telegram.
 
 ---
 
-### 2. Clone the Repository
+## 🏗️ System Architecture
 
-```bash
-git clone https://github.com/SwinSwinning/CryptoTra.git
-cd CryptoTra
+CryptoTra utilizes a robust background synchronization engine and a decoupled frontend-backend architecture to provide low-latency market insights.
+
+```mermaid
+graph TD
+    Cron[Node-Cron Scheduler] -->|15min Interval| Sync[Sync Service]
+    Sync -->|Fetch Top 200| CMC[CoinMarketCap API]
+    Sync -->|Filter & Fetch OHLC| Kraken[Kraken API]
+    Sync -->|Calculate Indicators| TA[Technical Analysis Engine]
+    TA -->|Persist| DB[(SQLite / Prisma)]
+    TA -->|Evaluate Alerts| Alerts[Alert Manager]
+    Alerts -->|Push Notification| TG[Telegram Bot]
+    
+    Dashboard[React Frontend] -->|REST API| Express[Express Server]
+    Express -->|Query| DB
 ```
 
 ---
 
-### 3. Populate .env File
+## ✨ Key Features
 
-```bash
-git clone https://github.com/SwinSwinning/CryptoTra.git
-cd CryptoTra
-```
-
----
-
-### 3. Run in Development (hot reload)
-
-This runs the React frontend (Vite) and backend (Node/Express + Prisma) with live reload.
-
-```bash
-docker compose -f compose.dev.yml up --build
-```
-
-* Frontend → [http://localhost:5173](http://localhost:5173)
-* Backend API → [http://localhost:3001/api/candles](http://localhost:3001/api/candles)
-
-Stop with:
-
-```bash
-docker compose -f compose.dev.yml down
-```
+- **🚀 Smart Asset Discovery**: Automatically filters top gainers and losers from CoinMarketCap and cross-references them with available Kraken trading pairs.
+- **📊 Automated Technical Analysis**: Real-time calculation of critical indicators:
+  - **EMA**: 21, 50, and 200 periods for trend identification.
+  - **RSI**: 14-period Relative Strength Index for overbought/oversold signals.
+  - **Volume Analysis**: 100-period average volume comparison to detect breakouts.
+- **🔔 Real-Time Telegram Alerts**: Instant notifications for specific market triggers (e.g., volume spikes, EMA crossovers, or rapid price movement).
+- **🔄 Robust Sync Engine**: Integrated `node-cron` automation ensures the database is updated every 15 minutes without manual intervention.
+- **📱 Modern Dashboard**: A responsive React-based interface featuring:
+  - High-level gainer/loser overviews.
+  - Detailed candle-by-candle performance analysis.
+  - Toast notifications for real-time status updates.
 
 ---
 
-### 4. Run in Production
+## 🛠️ Technology Stack
 
-This builds optimized frontend static files (served by Nginx) and backend (Node/Express + Prisma).
+### Backend
+- **Runtime**: Node.js
+- **Framework**: Express.js
+- **Database**: SQLite (via Prisma ORM)
+- **Scheduling**: Node-cron
+- **API Clients**: Axios
 
-```bash
-docker compose -f compose.prod.yml up --build
-```
+### Frontend
+- **Framework**: React 19 (Vite)
+- **Styling**: Tailwind CSS 4
+- **Notifications**: React Toastify
+- **State Management**: React Hooks (useState/useEffect)
 
-* Frontend → [http://localhost](http://localhost)
-* Backend API → [http://localhost:3001/api/candles](http://localhost:3001/api/candles)
-
-Stop with:
-
-```bash
-docker compose -f compose.prod.yml down
-```
-
----
-
-## 📊 Features
-
-* Fetches live **5-minute candle data** from **Kraken API** (no API key required)
-* Stores data in **SQLite database** via Prisma
-* Displays last **5 candles per ticker** with:
-
-  * Timestamp
-  * Ticker
-  * Price
-  * Volume
-  * 6h, 12h, and 24h price change (%)
-* Backend can send **Telegram notifications** when configured indicator conditions are met
+### External Integrations
+- **Market Data**: Kraken Public API, CoinMarketCap API
+- **Messaging**: Telegram Bot API
 
 ---
 
-## ⚙️ Telegram Notifications
+## 🚀 Getting Started
 
-CryptoTraNot can send Telegram alerts when indicator thresholds are triggered.
+### Prerequisites
+- Node.js (v20 or higher)
+- npm or yarn
+- A CoinMarketCap API Key
+- A Telegram Bot Token (from [@BotFather](https://t.me/botfather))
 
-1. Create a Telegram bot via [@BotFather](https://t.me/botfather) and get the **Bot Token**.
-2. Get your **Chat ID** using [@userinfobot](https://t.me/userinfobot).
-3. Add these environment variables in a `.env` file or docker-compose config:
+### Installation
 
-   ```env
-   TELEGRAM_BOT_TOKEN=your-bot-token-here
-   TELEGRAM_CHAT_ID=your-chat-id-here
+1. **Clone the repository**:
+   ```bash
+   git clone https://github.com/SwinSwinning/CryptoTra.git
+   cd CryptoTra
    ```
-4. Restart the backend container. Notifications will be sent automatically when conditions are met.
+
+2. **Setup the Backend**:
+   ```bash
+   cd server
+   npm install
+   ```
+
+3. **Configure Environment Variables**:
+   Create a `.env` file in the `server` directory:
+   ```env
+   # API Keys
+   PROD_API_KEY=your_coinmarketcap_api_key
+   
+   # Telegram Configuration
+   TELEGRAM_BOT_TOKEN=your_bot_token
+   TELEGRAM_CHAT_ID=your_chat_id
+   
+   # Server Configuration
+   PORT=8080
+   NODE_ENV=prod
+   ```
+
+4. **Initialize Database**:
+   ```bash
+   npx prisma migrate dev --name init
+   ```
+
+5. **Setup the Frontend**:
+   ```bash
+   cd ../client
+   npm install
+   ```
 
 ---
 
-## 📸 Screenshots
+## 📖 Usage
 
-* Dashboard view (recent candles per ticker)
-  ![Dashboard Screenshot](docs/screenshots/dashboard.png)
+### Running the Application
 
-* Telegram notification example
-  ![Telegram Alert Screenshot](docs/screenshots/telegram-alert.png)
+1. **Start the Backend Server**:
+   ```bash
+   cd server
+   npm run dev
+   ```
+   The API will be available at `http://localhost:8080`.
 
-*(Place screenshots in `docs/screenshots/` folder and they will display here.)*
+2. **Start the Frontend Dashboard**:
+   ```bash
+   cd client
+   npm run dev
+   ```
+   The dashboard will be available at `http://localhost:5173`.
+
+### Key API Endpoints
+
+| Endpoint | Method | Description |
+| :--- | :--- | :--- |
+| `/upd` | `GET` | Manually triggers the Gainer/Loser sync process. |
+| `/ret` | `GET` | Returns all records currently in the database. |
+| `/getrecords` | `GET` | Retrieves records with optional `?ticker=` filtering. |
+| `/tic` | `GET` | Updates the list of available cross-exchange pairs. |
+| `/del` | `GET` | Clears all candle data from the database. |
 
 ---
 
-## 📂 Project Structure
+## 🛡️ Technical Analysis Logic
 
+CryptoTra evaluates market conditions based on multi-factor triggers:
+
+```javascript
+// Example of an Uptrend Trigger
+const upcond = 
+    candle.last6change > 3 &&            // >3% change in last 6 candles
+    minAvgVol &&                         // Volume > 1000 units
+    candle.price > candle.ema200 &&      // Price above EMA 200
+    candle.ema50 > candle.ema200 &&      // Bullish EMA crossover
+    candle.rsi14 < 70;                   // Not yet overbought
 ```
-cryptotranot/
-  frontend/     # React + Vite frontend
-  backend/      # Node + Express + Prisma backend
-  compose.dev.yml
-  compose.prod.yml
-  .dockerignore
-  docs/screenshots/   # store screenshots here
-```
 
 ---
 
-## 🛠 Development Notes
+## 🤝 Contributing
 
-* Frontend proxy → `/api` requests are forwarded to backend.
-* In dev mode, edits reload automatically.
-* In prod mode, frontend is served by **Nginx** on port 80.
-* Candle fetching runs on a **5-minute cron job** inside the backend.
+1. Fork the Project
+2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the Branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
 ---
 
-## 🧑‍💻 Author
+## 📄 License
 
-* Your Name
-* [Your GitHub](https://github.com/SwinSwinning)
+Distributed under the **ISC License**. See `LICENSE` for more information.
+
+---
+
+Developed with ❤️ by [SwinSwinning](https://github.com/SwinSwinning)
